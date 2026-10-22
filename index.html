@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stop! / Scattergories Vocabulary Game</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Diagonal stripes background pattern for header box like reference image */
+        .stripe-bg {
+            background-image: repeating-linear-gradient(
+                45deg,
+                rgba(0, 0, 0, 0.04),
+                rgba(0, 0, 0, 0.04) 10px,
+                transparent 10px,
+                transparent 20px
+            );
+        }
+
+        .dark .stripe-bg {
+            background-image: repeating-linear-gradient(
+                45deg,
+                rgba(255, 255, 255, 0.04),
+                rgba(255, 255, 255, 0.04) 10px,
+                transparent 10px,
+                transparent 20px
+            );
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.2);
+            border-radius: 4px;
+        }
+        .dark ::webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+        }
+        .dark ::webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+        }
+    </style>
+</head>
+<body class="bg-white text-black dark:bg-zinc-950 dark:text-white min-h-full flex flex-col justify-between transition-colors duration-200">
+
+    <div class="max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex-grow flex flex-col justify-between">
+        <!-- HEADER / NAVIGATION TOP BAR -->
+        <header class="flex flex-wrap items-center justify-between border-b-4 border-black dark:border-white pb-4 mb-4 gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-black dark:bg-white text-white dark:text-black font-black px-3 py-1 text-2xl tracking-tighter rounded-sm">
+                    STOP!
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">Vocabulary Practice</h1>
+                    <p class="text-xs font-mono text-zinc-500 dark:text-zinc-400">English &amp; Français Scattergories</p>
+                </div>
+            </div>
+
+            <!-- Global Controls: Language & Theme -->
+            <div class="flex items-center gap-3">
+                <!-- Language Selector -->
+                <div class="flex items-center bg-zinc-100 dark:bg-zinc-900 border-2 border-black dark:border-white rounded p-1 font-semibold text-sm">
+                    <button id="btn-lang-en" onclick="setLanguage('en')" class="px-3 py-1 rounded transition-colors bg-black text-white dark:bg-white dark:text-black">
+                        🇬🇧 English
+                    </button>
+                    <button id="btn-lang-fr" onclick="setLanguage('fr')" class="px-3 py-1 rounded transition-colors text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white">
+                        🇫🇷 Français
+                    </button>
+                </div>
+
+                <!-- Dark Mode Toggle -->
+                <button onclick="toggleDarkMode()" class="flex items-center gap-2 border-2 border-black dark:border-white px-3 py-1.5 font-bold hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all active:translate-y-0.5">
+                    <i data-lucide="moon" class="w-4 h-4 hidden dark:inline"></i>
+                    <i data-lucide="sun" class="w-4 h-4 inline dark:hidden"></i>
+                    <span class="text-sm hidden sm:inline" id="lbl-theme">Change Colors</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- MAIN GAME GRID (Structured like reference image) -->
+        <main class="grid grid-cols-1 md:grid-cols-12 gap-0 border-4 border-black dark:border-white bg-white dark:bg-zinc-950 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)]">
+            
+            <!-- LEFT COLUMN (Letter & Timer) -->
+            <div class="md:col-span-4 border-b-4 md:border-b-0 md:border-r-4 border-black dark:border-white flex flex-col">
+                
+                <!-- BOX 1: LETTER DISPLAY & SELECTOR -->
+                <div class="relative p-6 stripe-bg border-b-4 border-black dark:border-white flex flex-col justify-between h-64">
+                    <div class="flex justify-between items-start">
+                        <span class="font-bold uppercase tracking-wider text-sm border-2 border-black dark:border-white px-2 py-0.5 bg-white dark:bg-zinc-900" id="lbl-letter-title">
+                            Selected Letter
+                        </span>
+                        
+                        <!-- Reroll / Randomize Letter -->
+                        <button onclick="rollRandomLetter()" title="Randomize letter" class="flex items-center gap-1 font-bold text-xs uppercase text-zinc-600 dark:text-zinc-300 hover:text-black dark:hover:text-white bg-white dark:bg-zinc-900 border-2 border-black dark:border-white px-2 py-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] active:translate-x-0.5 active:translate-y-0.5">
+                            <i data-lucide="shuffle" class="w-3.5 h-3.5"></i>
+                            <span id="lbl-random">Re-roll</span>
+                        </button>
+                    </div>
+
+                    <!-- Huge Active Letter -->
+                    <div class="my-auto text-center">
+                        <span id="active-letter-display" class="text-9xl font-black tracking-tighter select-none inline-block transform hover:scale-105 transition-transform cursor-pointer" onclick="toggleAlphabetModal()" title="Click to pick a letter">
+                            J
+                        </span>
+                    </div>
+
+                    <!-- Letter Picker Quick Dropdown/Grid trigger -->
+                    <div class="flex items-center justify-between text-xs font-bold pt-2 border-t border-black/10 dark:border-white/10">
+                        <span id="lbl-choose-alphabet">Choose from Alphabet:</span>
+                        <select id="alphabet-select" onchange="selectLetter(this.value)" class="bg-white dark:bg-zinc-900 border-2 border-black dark:border-white font-mono font-bold px-2 py-1 focus:outline-none cursor-pointer">
+                            <!-- Populated dynamically A-Z -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- BOX 2: TIMER & PLAY/PAUSE CONTROLS -->
+                <div class="grid grid-cols-2 divide-x-4 divide-black dark:divide-white flex-grow min-h-[160px]">
+                    <!-- TIME DISPLAY & SETTINGS -->
+                    <div class="p-4 flex flex-col justify-between bg-white dark:bg-zinc-950">
+                        <div class="flex justify-between items-center">
+                            <span class="font-bold text-xs uppercase tracking-wider" id="lbl-time">Time</span>
+                            <!-- Custom Time Preset Selector -->
+                            <button onclick="cycleTimerPreset()" class="text-xs underline font-bold hover:text-zinc-600 dark:hover:text-zinc-300" id="lbl-change-time">
+                                Change
+                            </button>
+                        </div>
+                        <div class="text-center my-auto">
+                            <span id="timer-display" class="text-5xl font-mono font-black tracking-tight">120</span>
+                            <span class="text-xs text-zinc-500 font-mono block">sec</span>
+                        </div>
+                    </div>
+
+                    <!-- PLAY / PAUSE BUTTON BOX -->
+                    <button id="btn-play-pause" onclick="toggleTimer()" class="p-4 flex flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors group cursor-pointer">
+                        <div id="play-icon-container" class="transform group-hover:scale-110 transition-transform">
+                            <i data-lucide="play" class="w-16 h-16 fill-current"></i>
+                        </div>
+                        <span id="lbl-play-status" class="mt-2 font-black text-sm uppercase tracking-wider">Play</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- MIDDLE COLUMN (Categories & Input Table) -->
+            <div class="md:col-span-6 border-b-4 md:border-b-0 md:border-r-4 border-black dark:border-white flex flex-col bg-white dark:bg-zinc-950">
+                <!-- Header Control Row -->
+                <div class="p-3 border-b-4 border-black dark:border-white flex items-center justify-between bg-zinc-100 dark:bg-zinc-900">
+                    <div class="flex items-center gap-2">
+                        <span class="font-black text-sm uppercase tracking-wider" id="lbl-categories-title">Categories</span>
+                        <button onclick="addCustomCategoryPrompt()" class="text-xs bg-white dark:bg-zinc-800 border-2 border-black dark:border-white px-2 py-0.5 font-bold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors" id="lbl-add-category">
+                            + Add Category
+                        </button>
+                    </div>
+
+                    <!-- Counter Controls (- 12 +) -->
+                    <div class="flex items-center gap-2 font-mono text-sm font-bold bg-white dark:bg-zinc-950 border-2 border-black dark:border-white px-2 py-0.5">
+                        <button onclick="adjustCategoryCount(-1)" class="hover:text-zinc-500 font-black px-1">-</button>
+                        <span id="category-count-display">8</span>
+                        <button onclick="adjustCategoryCount(1)" class="hover:text-zinc-500 font-black px-1">+</button>
+                    </div>
+                </div>
+
+                <!-- Categories List / Inputs Container -->
+                <div id="categories-container" class="divide-y-2 divide-black/10 dark:divide-white/10 overflow-y-auto max-h-[500px] flex-grow">
+                    <!-- Dynamic Rows populated by JS -->
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN (Game Action Controls) -->
+            <div class="md:col-span-2 p-6 flex flex-col justify-between items-center text-center bg-zinc-50 dark:bg-zinc-900 min-h-[250px]">
+                
+                <!-- TOP ACTION: STOP BUTTON -->
+                <button id="btn-stop" onclick="triggerStop()" disabled class="w-full py-6 px-2 border-4 border-black dark:border-white bg-red-600 hover:bg-red-700 text-white font-black text-2xl tracking-wider uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] opacity-50 cursor-not-allowed transition-all transform active:translate-x-0.5 active:translate-y-0.5 mb-4">
+                    🛑 STOP!
+                </button>
+
+                <!-- SCORE / PROGRESS OVERVIEW -->
+                <div class="w-full my-auto py-3 px-2 border-2 border-black dark:border-white bg-white dark:bg-zinc-950 my-2">
+                    <span class="text-xs uppercase font-bold text-zinc-500 block" id="lbl-score-title">Valid Words</span>
+                    <span id="score-counter" class="text-3xl font-mono font-black text-brand-600 dark:text-brand-500">0 / 8</span>
+                    <div id="score-breakdown" class="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1 font-mono">
+                        Ready to start
+                    </div>
+                </div>
+
+                <!-- RESTART / REFRESH BUTTON (Matching reference image icon layout) -->
+                <div class="w-full pt-4">
+                    <button onclick="restartGame()" class="w-full flex flex-col items-center justify-center p-4 border-2 border-black dark:border-white hover:bg-white dark:hover:bg-zinc-800 transition-all group">
+                        <i data-lucide="rotate-ccw" class="w-8 h-8 group-hover:rotate-[-45deg] transition-transform mb-1"></i>
+                        <span class="font-black uppercase text-sm" id="lbl-restart">Restart</span>
+                    </button>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- ALPHABET SELECTION MODAL GRID -->
+        <div id="alphabet-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+            <div class="bg-white dark:bg-zinc-900 border-4 border-black dark:border-white max-w-xl w-full p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)]">
+                <div class="flex justify-between items-center mb-4 pb-2 border-b-2 border-black dark:border-white">
+                    <h3 class="font-black text-lg uppercase" id="lbl-modal-select-letter">Select Initial Letter</h3>
+                    <button onclick="toggleAlphabetModal()" class="font-bold text-xl hover:text-red-500">&times;</button>
+                </div>
+                <p class="text-xs text-zinc-500 mb-4" id="lbl-modal-subtitle">Choose a specific letter to practice vocabulary starting with that letter:</p>
+                <div id="alphabet-grid" class="grid grid-cols-6 sm:grid-cols-7 gap-2 font-mono font-bold text-lg">
+                    <!-- Populated via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- FOOTER / CREDIT BAR -->
+        <footer class="mt-6 border-t-2 border-black dark:border-white pt-4 flex flex-wrap justify-between items-center text-xs text-zinc-600 dark:text-zinc-400 gap-2">
+            <div class="flex gap-4 font-bold">
+                <span id="lbl-footer-title">English / French Vocabulary Stop! Game</span>
+                <a href="#" onclick="showRules(); return false;" class="underline hover:text-black dark:hover:text-white" id="lbl-how-to-play">How to Play</a>
+            </div>
+            <div class="flex items-center gap-2">
+                <span>Interactive Learning Tool</span>
+                <span class="font-mono bg-black text-white dark:bg-white dark:text-black px-1">v1.2</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- JAVASCRIPT GAME LOGIC -->
+    <script>
+        /* ==========================================================================
+           DICTIONARIES & DICTIONARY LOOKUP UTILITY FOR ENGLISH & FRENCH
+           ========================================================================== */
+        const VOCAB_DICTIONARY = {
+            en: {
+                categories: [
+                    { id: 'name', name: 'First Name', hint: 'e.g. James, Jessica' },
+                    { id: 'animal', name: 'Animal', hint: 'e.g. Jaguar, Jellyfish' },
+                    { id: 'food', name: 'Fruit / Vegetable / Food', hint: 'e.g. Jam, Juice, Jackfruit' },
+                    { id: 'place', name: 'Country / City / Place', hint: 'e.g. Japan, Jamaica, Jakarta' },
+                    { id: 'object', name: 'Object / Item', hint: 'e.g. Jacket, Jar, Jewel' },
+                    { id: 'verb', name: 'Verb (Action)', hint: 'e.g. Jump, Jog, Join' },
+                    { id: 'color', name: 'Color', hint: 'e.g. Jade, Jet black' },
+                    { id: 'job', name: 'Profession / Job', hint: 'e.g. Journalist, Judge' },
+                    { id: 'sport', name: 'Sport / Hobby', hint: 'e.g. Judo, Juggling' },
+                    { id: 'clothes', name: 'Clothing', hint: 'e.g. Jeans, Jumper' },
+                    { id: 'nature', name: 'Nature / Environment', hint: 'e.g. Jungle, Jasmine' },
+                    { id: 'adjective', name: 'Adjective', hint: 'e.g. Joyful, Juicy' }
+                ],
+                // Basic validation bank for fast client-side checking
+                commonWords: ["apple", "animal", "actor", "banana", "bear", "boy", "cat", "car", "dog", "duck", "elephant", "eagle", "frog", "fish", "giraffe", "goat", "horse", "hat", "ice", "iguana", "jaguar", "jacket", "jam", "japan", "jump", "judge", "kiwi", "kangaroo", "lion", "lemon", "monkey", "mango", "nurse", "nest", "owl", "orange", "penguin", "pencil", "queen", "quiet", "rabbit", "rose", "snake", "sun", "tiger", "table", "umbrella", "uncle", "violet", "vase", "wolf", "window", "x-ray", "xylophone", "yellow", "yak", "zebra", "zoo"]
+            },
+            fr: {
+                categories: [
+                    { id: 'name', name: 'Prénom', hint: 'ex. Jacques, Julie' },
+                    { id: 'animal', name: 'Animal', hint: 'ex. Jaguar, Jape' },
+                    { id: 'food', name: 'Fruit / Légume / Nourriture', hint: 'ex. Jambon, Jus' },
+                    { id: 'place', name: 'Pays / Ville / Lieu', hint: 'ex. Japon, Jardin' },
+                    { id: 'object', name: 'Objet', hint: 'ex. Jeton, Journal' },
+                    { id: 'verb', name: 'Verbe', hint: 'ex. Jouer, Jeter, Jongler' },
+                    { id: 'color', name: 'Couleur', hint: 'ex. Jaune, Jais' },
+                    { id: 'job', name: 'Métier / Profession', hint: 'ex. Journaliste, Juge' },
+                    { id: 'sport', name: 'Sport / Loisir', hint: 'ex. Judo, Jogging' },
+                    { id: 'clothes', name: 'Vêtement', hint: 'ex. Jupe, Jean' },
+                    { id: 'nature', name: 'Nature', hint: 'ex. Jardin, Jonquille' },
+                    { id: 'adjective', name: 'Adjectif', hint: 'ex. Joli, Jeune, Joyeux' }
+                ],
+                commonWords: ["arbre", "agneau", "ananas", "banane", "baleine", "chat", "chien", "dindon", "dauphin", "elephant", "ecole", "fleur", "fromage", "girafe", "gateau", "hibou", "homme", "ile", "iguane", "jardin", "jambon", "jupe", "jouer", "jaune", "journal", "japon", "koala", "kiwi", "lion", "livre", "maison", "mouton", "navet", "nuit", "oiseau", "orange", "pomme", "pain", "quatre", "question", "renard", "rose", "soleil", "singe", "tiger", "table", "usine", "unite", "vache", "voiture", "wagon", "wusu", "yeux", "yaourt", "zebre", "zoo"]
+            }
+        };
+
+        const TRANSLATIONS = {
+            en: {
+                themeLbl: "Change Colors",
+                selectedLetter: "Selected Letter",
+                reroll: "Re-roll",
+                chooseAlphabet: "Choose from Alphabet:",
+                time: "Time",
+                change: "Change",
+                play: "Play",
+                pause: "Pause",
+                categoriesTitle: "Categories",
+                addCategory: "+ Add Category",
+                stop: "🛑 STOP!",
+                validWords: "Valid Words",
+                restart: "Restart",
+                readyToStart: "Press Play to begin",
+                inProgress: "Type fast before time runs out!",
+                stopped: "Time stopped! Checking results...",
+                selectLetterTitle: "Select Initial Letter",
+                selectLetterSub: "Choose a specific letter to practice vocabulary starting with that letter:",
+                footerTitle: "English / French Vocabulary Stop! Game",
+                howToPlay: "How to Play",
+                promptCategory: "Enter new category name:"
+            },
+            fr: {
+                themeLbl: "Changer Couleurs",
+                selectedLetter: "Lettre Choisie",
+                reroll: "Tirer au sort",
+                chooseAlphabet: "Choisir dans l'alphabet:",
+                time: "Temps",
+                change: "Modifier",
+                play: "Jouer",
+                pause: "Pause",
+                categoriesTitle: "Catégories",
+                addCategory: "+ Ajouter Catégorie",
+                stop: "🛑 STOP !",
+                validWords: "Mots Valides",
+                restart: "Recommencer",
+                readyToStart: "Appuyez sur Jouer pour commencer",
+                inProgress: "Écrivez vite avant la fin du temps !",
+                stopped: "Temps arrêté ! Vérification des réponses...",
+                selectLetterTitle: "Sélectionner la lettre initiale",
+                selectLetterSub: "Choisissez une lettre spécifique pour pratiquer le vocabulaire :",
+                footerTitle: "Jeu du STOP / Petit Bac - Français & Anglais",
+                howToPlay: "Règles du jeu",
+                promptCategory: "Entrez le nom de la nouvelle catégorie :"
+            }
+        };
+
+        /* ==========================================================================
+           GAME STATE MANAGEMENT
+           ========================================================================== */
+        let currentLang = 'en';
+        let currentLetter = 'J';
+        let isRunning = false;
+        let timeRemaining = 120;
+        let defaultTimeLimit = 120;
+        let timerInterval = null;
+        let activeCategoryCount = 8;
+        let customCategories = [];
+
+        // Audio synthesizer using Web Audio API
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            return audioCtx;
+        }
+
+        function playSound(type) {
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                const now = ctx.currentTime;
+
+                if (type === 'tick') {
+                    osc.frequency.setValueAtTime(800, now);
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                } else if (type === 'start') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.exponentialRampToValueAtTime(880, now + 0.2);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                } else if (type === 'stop') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.linearRampToValueAtTime(150, now + 0.4);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                } else if (type === 'valid') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                }
+            } catch (e) {
+                // Audio safely ignored if forbidden by browser policy
+            }
+        }
+
+        /* ==========================================================================
+           INITIALIZATION & INTERFACE UPDATES
+           ========================================================================== */
+        window.addEventListener('DOMContentLoaded', () => {
+            initAlphabetControls();
+            renderCategories();
+            updateUI();
+            lucide.createIcons();
+        });
+
+        function initAlphabetControls() {
+            const selectEl = document.getElementById('alphabet-select');
+            const gridEl = document.getElementById('alphabet-grid');
+            selectEl.innerHTML = '';
+            gridEl.innerHTML = '';
+
+            for (let i = 65; i <= 90; i++) {
+                const char = String.fromCharCode(i);
+                
+                // Dropdown Option
+                const opt = document.createElement('option');
+                opt.value = char;
+                opt.textContent = char;
+                if (char === currentLetter) opt.selected = true;
+                selectEl.appendChild(opt);
+
+                // Modal Grid Item
+                const btn = document.createElement('button');
+                btn.className = 'p-3 border-2 border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors font-bold text-center';
+                btn.textContent = char;
+                btn.onclick = () => {
+                    selectLetter(char);
+                    toggleAlphabetModal();
+                };
+                gridEl.appendChild(btn);
+            }
+        }
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            
+            // Toggle active pill button styles
+            const btnEn = document.getElementById('btn-lang-en');
+            const btnFr = document.getElementById('btn-lang-fr');
+
+            if (lang === 'en') {
+                btnEn.className = "px-3 py-1 rounded transition-colors bg-black text-white dark:bg-white dark:text-black";
+                btnFr.className = "px-3 py-1 rounded transition-colors text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white";
+            } else {
+                btnFr.className = "px-3 py-1 rounded transition-colors bg-black text-white dark:bg-white dark:text-black";
+                btnEn.className = "px-3 py-1 rounded transition-colors text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white";
+            }
+
+            // Update Text translations
+            const t = TRANSLATIONS[lang];
+            document.getElementById('lbl-theme').textContent = t.themeLbl;
+            document.getElementById('lbl-letter-title').textContent = t.selectedLetter;
+            document.getElementById('lbl-random').textContent = t.reroll;
+            document.getElementById('lbl-choose-alphabet').textContent = t.chooseAlphabet;
+            document.getElementById('lbl-time').textContent = t.time;
+            document.getElementById('lbl-change-time').textContent = t.change;
+            document.getElementById('lbl-categories-title').textContent = t.categoriesTitle;
+            document.getElementById('lbl-add-category').textContent = t.addCategory;
+            document.getElementById('btn-stop').textContent = t.stop;
+            document.getElementById('lbl-score-title').textContent = t.validWords;
+            document.getElementById('lbl-restart').textContent = t.restart;
+            document.getElementById('lbl-modal-select-letter').textContent = t.selectLetterTitle;
+            document.getElementById('lbl-modal-subtitle').textContent = t.selectLetterSub;
+            document.getElementById('lbl-footer-title').textContent = t.footerTitle;
+            document.getElementById('lbl-how-to-play').textContent = t.howToPlay;
+
+            renderCategories();
+            validateAnswers();
+        }
+
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+        }
+
+        /* ==========================================================================
+           LETTER & CATEGORY MANAGEMENT
+           ========================================================================== */
+        function selectLetter(letter) {
+            currentLetter = letter.toUpperCase();
+            document.getElementById('active-letter-display').textContent = currentLetter;
+            document.getElementById('alphabet-select').value = currentLetter;
+            validateAnswers();
+        }
+
+        function rollRandomLetter() {
+            // Pick a letter excluding rarely used starting letters like X, Z, Q, Y occasionally
+            const alphabet = "ABCDEFGHIJKLMNOPRSTUVW";
+            const randomChar = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+            selectLetter(randomChar);
+        }
+
+        function toggleAlphabetModal() {
+            const modal = document.getElementById('alphabet-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        function adjustCategoryCount(delta) {
+            const newCount = activeCategoryCount + delta;
+            if (newCount >= 3 && newCount <= 12) {
+                activeCategoryCount = newCount;
+                document.getElementById('category-count-display').textContent = activeCategoryCount;
+                renderCategories();
+                validateAnswers();
+            }
+        }
+
+        function addCustomCategoryPrompt() {
+            const t = TRANSLATIONS[currentLang];
+            const name = prompt(t.promptCategory);
+            if (name && name.trim() !== "") {
+                customCategories.push({ id: 'custom-' + Date.now(), name: name.trim(), hint: 'Custom' });
+                activeCategoryCount = Math.min(12, activeCategoryCount + 1);
+                document.getElementById('category-count-display').textContent = activeCategoryCount;
+                renderCategories();
+            }
+        }
+
+        function renderCategories() {
+            const container = document.getElementById('categories-container');
+            container.innerHTML = '';
+
+            const baseList = VOCAB_DICTIONARY[currentLang].categories;
+            const fullList = [...baseList, ...customCategories].slice(0, activeCategoryCount);
+
+            fullList.forEach((cat, index) => {
+                const row = document.createElement('div');
+                row.className = "p-3 flex items-center gap-3 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors";
+
+                row.innerHTML = `
+                    <div class="font-mono font-bold text-sm text-zinc-400 w-6 text-right select-none">
+                        ${index + 1}
+                    </div>
+                    <div class="w-1/3 min-w-[120px]">
+                        <label for="cat-input-${index}" class="block font-bold text-sm truncate">${cat.name}</label>
+                        <span class="text-[10px] text-zinc-500 truncate block font-mono">${cat.hint || ''}</span>
+                    </div>
+                    <div class="flex-grow relative">
+                        <input type="text" 
+                               id="cat-input-${index}" 
+                               data-category="${cat.id}"
+                               oninput="handleInput('${index}')" 
+                               placeholder="${currentLetter}..." 
+                               disabled
+                               autocorrect="off" 
+                               spellcheck="false"
+                               class="w-full bg-zinc-100 dark:bg-zinc-900 border-2 border-black dark:border-white font-mono font-bold px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white text-sm uppercase transition-all disabled:opacity-60 disabled:cursor-not-allowed">
+                    </div>
+                    <div id="status-icon-${index}" class="w-6 h-6 flex items-center justify-center font-bold text-sm">
+                        <!-- Checked / Validation icon loaded here -->
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        /* ==========================================================================
+           GAME TIMER & CONTROL LOGIC
+           ========================================================================== */
+        function toggleTimer() {
+            if (isRunning) {
+                pauseTimer();
+            } else {
+                startTimer();
+            }
+        }
+
+        function startTimer() {
+            if (isRunning) return;
+
+            isRunning = true;
+            playSound('start');
+
+            // Enable text inputs
+            const inputs = document.querySelectorAll('#categories-container input');
+            inputs.forEach(input => input.disabled = false);
+
+            // Focus first input if empty
+            if (inputs.length > 0 && inputs[0].value === "") {
+                inputs[0].focus();
+            }
+
+            // Enable STOP button
+            const stopBtn = document.getElementById('btn-stop');
+            stopBtn.disabled = false;
+            stopBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+            // Update Play/Pause UI
+            const t = TRANSLATIONS[currentLang];
+            document.getElementById('lbl-play-status').textContent = t.pause;
+            document.getElementById('play-icon-container').innerHTML = `<i data-lucide="pause" class="w-16 h-16 fill-current"></i>`;
+            document.getElementById('score-breakdown').textContent = t.inProgress;
+            lucide.createIcons();
+
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                document.getElementById('timer-display').textContent = timeRemaining;
+
+                if (timeRemaining <= 10 && timeRemaining > 0) {
+                    playSound('tick');
+                }
+
+                if (timeRemaining <= 0) {
+                    triggerStop();
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            if (!isRunning) return;
+            isRunning = false;
+            clearInterval(timerInterval);
+
+            const t = TRANSLATIONS[currentLang];
+            document.getElementById('lbl-play-status').textContent = t.play;
+            document.getElementById('play-icon-container').innerHTML = `<i data-lucide="play" class="w-16 h-16 fill-current"></i>`;
+            lucide.createIcons();
+        }
+
+        function triggerStop() {
+            pauseTimer();
+            playSound('stop');
+
+            // Lock all inputs
+            const inputs = document.querySelectorAll('#categories-container input');
+            inputs.forEach(input => input.disabled = true);
+
+            // Disable stop button
+            const stopBtn = document.getElementById('btn-stop');
+            stopBtn.disabled = true;
+            stopBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            const t = TRANSLATIONS[currentLang];
+            document.getElementById('score-breakdown').textContent = t.stopped;
+
+            validateAnswers();
+        }
+
+        function cycleTimerPreset() {
+            if (isRunning) return;
+            if (defaultTimeLimit === 120) defaultTimeLimit = 60;
+            else if (defaultTimeLimit === 60) defaultTimeLimit = 180;
+            else defaultTimeLimit = 120;
+
+            timeRemaining = defaultTimeLimit;
+            document.getElementById('timer-display').textContent = timeRemaining;
+        }
+
+        function restartGame() {
+            pauseTimer();
+            timeRemaining = defaultTimeLimit;
+            document.getElementById('timer-display').textContent = timeRemaining;
+
+            // Clear inputs
+            const inputs = document.querySelectorAll('#categories-container input');
+            inputs.forEach(input => {
+                input.value = '';
+                input.disabled = true;
+                input.classList.remove('bg-green-100', 'dark:bg-green-950', 'border-green-500');
+            });
+
+            // Disable Stop Button
+            const stopBtn = document.getElementById('btn-stop');
+            stopBtn.disabled = true;
+            stopBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            const t = TRANSLATIONS[currentLang];
+            document.getElementById('score-counter').textContent = `0 / ${activeCategoryCount}`;
+            document.getElementById('score-breakdown').textContent = t.readyToStart;
+
+            // Clear validation icons
+            for (let i = 0; i < activeCategoryCount; i++) {
+                const iconContainer = document.getElementById(`status-icon-${i}`);
+                if (iconContainer) iconContainer.innerHTML = '';
+            }
+        }
+
+        /* ==========================================================================
+           INPUT VALIDATION & PRACTICE CHECKER
+           ========================================================================== */
+        function handleInput(index) {
+            validateAnswers();
+        }
+
+        function validateAnswers() {
+            const inputs = document.querySelectorAll('#categories-container input');
+            let validCount = 0;
+
+            inputs.forEach((input, idx) => {
+                const val = input.value.trim().toUpperCase();
+                const iconContainer = document.getElementById(`status-icon-${idx}`);
+                if (!iconContainer) return;
+
+                if (val === "") {
+                    iconContainer.innerHTML = '';
+                    input.className = "w-full bg-zinc-100 dark:bg-zinc-900 border-2 border-black dark:border-white font-mono font-bold px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white text-sm uppercase transition-all disabled:opacity-60 disabled:cursor-not-allowed";
+                    return;
+                }
+
+                // Check if input starts with selected active letter
+                const startsCorrectly = val.startsWith(currentLetter);
+
+                if (startsCorrectly) {
+                    validCount++;
+                    input.className = "w-full bg-emerald-100 dark:bg-emerald-950/60 border-2 border-emerald-600 dark:border-emerald-500 font-mono font-bold px-3 py-1.5 text-sm uppercase transition-all text-emerald-900 dark:text-emerald-100";
+                    iconContainer.innerHTML = `<i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-600 dark:text-emerald-400"></i>`;
+                } else {
+                    input.className = "w-full bg-amber-100 dark:bg-amber-950/60 border-2 border-amber-600 dark:border-amber-500 font-mono font-bold px-3 py-1.5 text-sm uppercase transition-all text-amber-900 dark:text-amber-100";
+                    iconContainer.innerHTML = `<i data-lucide="alert-circle" class="w-5 h-5 text-amber-600 dark:text-amber-400"></i>`;
+                }
+            });
+
+            document.getElementById('score-counter').textContent = `${validCount} / ${inputs.length}`;
+            lucide.createIcons();
+        }
+
+        /* ==========================================================================
+           HELP & MODAL HELPERS
+           ========================================================================== */
+        function showRules() {
+            const msg = currentLang === 'en' 
+                ? "HOW TO PLAY 'STOP':\n\n1. Select a letter from A-Z.\n2. Click 'Play' to start the timer.\n3. Type words in English or French starting with the chosen letter for each category.\n4. Click 'STOP!' when you finish or when the timer ends.\n5. Review your score and practice new vocabulary!"
+                : "COMMENT JOUER AU 'STOP / PETIT BAC' :\n\n1. Choisissez une lettre de A à Z.\n2. Cliquez sur 'Jouer' pour lancer le chrono.\n3. Écrivez des mots commençant par la lettre choisie pour chaque catégorie.\n4. Appuyez sur 'STOP !' dès que vous avez fini.\n5. Vérifiez votre score et révisez votre vocabulaire !";
+            
+            alert(msg);
+        }
+
+        function updateUI() {
+            document.getElementById('timer-display').textContent = defaultTimeLimit;
+            document.getElementById('category-count-display').textContent = activeCategoryCount;
+        }
+    </script>
+</body>
+</html>
