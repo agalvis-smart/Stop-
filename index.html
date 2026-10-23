@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stop! / Scattergories Vocabulary Game</title>
+    <title>Stop! / Scattergories Vocabulary Game - Live Multiplayer</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -30,6 +30,9 @@
     </script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Canvas Confetti Library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
         
@@ -76,11 +79,20 @@
         .dark ::webkit-scrollbar-thumb {
             background: rgba(255,255,255,0.2);
         }
+
+        @keyframes pulse-fast {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.85; transform: scale(1.02); }
+        }
+        .animate-pulse-fast {
+            animation: pulse-fast 0.8s infinite;
+        }
     </style>
 </head>
 <body class="bg-white text-black dark:bg-zinc-950 dark:text-white min-h-full flex flex-col justify-between transition-colors duration-200">
 
-    <div class="max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex-grow flex flex-col justify-between">
+    <div class="max-w-7xl w-full mx-auto p-3 sm:p-6 lg:p-8 flex-grow flex flex-col justify-between">
+        
         <!-- HEADER / NAVIGATION TOP BAR -->
         <header class="flex flex-wrap items-center justify-between border-b-4 border-black dark:border-white pb-4 mb-4 gap-4">
             <div class="flex items-center space-x-3">
@@ -89,30 +101,58 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-bold tracking-tight">Vocabulary Practice</h1>
-                    <p class="text-xs font-mono text-zinc-500 dark:text-zinc-400">English &amp; Français Scattergories</p>
+                    <p class="text-xs font-mono text-zinc-500 dark:text-zinc-400">English &amp; Français Scattergories Classroom</p>
                 </div>
             </div>
 
-            <!-- Global Controls: Language & Theme -->
-            <div class="flex items-center gap-3">
-                <!-- Language Selector -->
-                <div class="flex items-center bg-zinc-100 dark:bg-zinc-900 border-2 border-black dark:border-white rounded p-1 font-semibold text-sm">
-                    <button id="btn-lang-en" onclick="setLanguage('en')" class="px-3 py-1 rounded transition-colors bg-black text-white dark:bg-white dark:text-black">
-                        🇬🇧 English
+            <!-- Global Controls: Language, View Mode, Theme -->
+            <div class="flex flex-wrap items-center gap-3">
+                
+                <!-- Role / View Switcher (Host vs Mobile Student) -->
+                <div class="flex items-center bg-zinc-100 dark:bg-zinc-900 border-2 border-black dark:border-white rounded p-1 font-semibold text-xs">
+                    <button id="btn-role-host" onclick="switchRole('host')" class="px-2.5 py-1 rounded transition-colors bg-black text-white dark:bg-white dark:text-black font-bold">
+                        📺 Host / Class Screen
                     </button>
-                    <button id="btn-lang-fr" onclick="setLanguage('fr')" class="px-3 py-1 rounded transition-colors text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white">
-                        🇫🇷 Français
+                    <button id="btn-role-student" onclick="switchRole('student')" class="px-2.5 py-1 rounded transition-colors text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white font-bold">
+                        📱 Mobile Student View
+                    </button>
+                </div>
+
+                <!-- Language Selector -->
+                <div class="flex items-center bg-zinc-100 dark:bg-zinc-900 border-2 border-black dark:border-white rounded p-1 font-semibold text-xs">
+                    <button id="btn-lang-en" onclick="setLanguage('en')" class="px-2.5 py-1 rounded transition-colors bg-black text-white dark:bg-white dark:text-black">
+                        🇬🇧 EN
+                    </button>
+                    <button id="btn-lang-fr" onclick="setLanguage('fr')" class="px-2.5 py-1 rounded transition-colors text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white">
+                        🇫🇷 FR
                     </button>
                 </div>
 
                 <!-- Dark Mode Toggle -->
-                <button onclick="toggleDarkMode()" class="flex items-center gap-2 border-2 border-black dark:border-white px-3 py-1.5 font-bold hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all active:translate-y-0.5">
+                <button onclick="toggleDarkMode()" class="flex items-center gap-2 border-2 border-black dark:border-white px-3 py-1.5 font-bold hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all active:translate-y-0.5 text-xs">
                     <i data-lucide="moon" class="w-4 h-4 hidden dark:inline"></i>
                     <i data-lucide="sun" class="w-4 h-4 inline dark:hidden"></i>
-                    <span class="text-sm hidden sm:inline" id="lbl-theme">Change Colors</span>
+                    <span class="hidden sm:inline" id="lbl-theme">Change Colors</span>
                 </button>
             </div>
         </header>
+
+        <!-- STUDENT JOIN PROMPT (Shown when on Student View if name not set) -->
+        <div id="student-name-banner" class="hidden mb-4 p-4 border-4 border-black dark:border-white bg-amber-100 dark:bg-amber-950/80 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <i data-lucide="smartphone" class="w-6 h-6"></i>
+                <div>
+                    <span class="font-black text-sm uppercase block" id="lbl-student-welcome">Student Player Portal</span>
+                    <span class="text-xs text-zinc-600 dark:text-zinc-300">You are playing live in room: <strong id="student-room-display" class="font-mono bg-black text-white px-1">#STOP-1001</strong></span>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <input type="text" id="student-name-input" placeholder="Your Name / Nom..." class="bg-white dark:bg-zinc-900 border-2 border-black dark:border-white px-3 py-1 text-sm font-bold focus:outline-none uppercase">
+                <button onclick="setStudentName()" class="bg-black text-white dark:bg-white dark:text-black font-bold text-xs px-3 py-1.5 border-2 border-black dark:border-white hover:opacity-80">
+                    Set Name
+                </button>
+            </div>
+        </div>
 
         <!-- MAIN GAME GRID (Structured like reference image) -->
         <main class="grid grid-cols-1 md:grid-cols-12 gap-0 border-4 border-black dark:border-white bg-white dark:bg-zinc-950 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)]">
@@ -128,7 +168,7 @@
                         </span>
                         
                         <!-- Reroll / Randomize Letter -->
-                        <button onclick="rollRandomLetter()" title="Randomize letter" class="flex items-center gap-1 font-bold text-xs uppercase text-zinc-600 dark:text-zinc-300 hover:text-black dark:hover:text-white bg-white dark:bg-zinc-900 border-2 border-black dark:border-white px-2 py-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] active:translate-x-0.5 active:translate-y-0.5">
+                        <button id="btn-reroll" onclick="rollRandomLetter()" title="Randomize letter" class="flex items-center gap-1 font-bold text-xs uppercase text-zinc-600 dark:text-zinc-300 hover:text-black dark:hover:text-white bg-white dark:bg-zinc-900 border-2 border-black dark:border-white px-2 py-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] active:translate-x-0.5 active:translate-y-0.5">
                             <i data-lucide="shuffle" class="w-3.5 h-3.5"></i>
                             <span id="lbl-random">Re-roll</span>
                         </button>
@@ -157,7 +197,7 @@
                         <div class="flex justify-between items-center">
                             <span class="font-bold text-xs uppercase tracking-wider" id="lbl-time">Time</span>
                             <!-- Custom Time Preset Selector -->
-                            <button onclick="cycleTimerPreset()" class="text-xs underline font-bold hover:text-zinc-600 dark:hover:text-zinc-300" id="lbl-change-time">
+                            <button id="btn-change-time" onclick="cycleTimerPreset()" class="text-xs underline font-bold hover:text-zinc-600 dark:hover:text-zinc-300" id="lbl-change-time">
                                 Change
                             </button>
                         </div>
@@ -178,21 +218,21 @@
             </div>
 
             <!-- MIDDLE COLUMN (Categories & Input Table) -->
-            <div class="md:col-span-6 border-b-4 md:border-b-0 md:border-r-4 border-black dark:border-white flex flex-col bg-white dark:bg-zinc-950">
+            <div class="md:col-span-5 border-b-4 md:border-b-0 md:border-r-4 border-black dark:border-white flex flex-col bg-white dark:bg-zinc-950">
                 <!-- Header Control Row -->
                 <div class="p-3 border-b-4 border-black dark:border-white flex items-center justify-between bg-zinc-100 dark:bg-zinc-900">
                     <div class="flex items-center gap-2">
                         <span class="font-black text-sm uppercase tracking-wider" id="lbl-categories-title">Categories</span>
-                        <button onclick="addCustomCategoryPrompt()" class="text-xs bg-white dark:bg-zinc-800 border-2 border-black dark:border-white px-2 py-0.5 font-bold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors" id="lbl-add-category">
+                        <button id="btn-add-cat" onclick="addCustomCategoryPrompt()" class="text-xs bg-white dark:bg-zinc-800 border-2 border-black dark:border-white px-2 py-0.5 font-bold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors" id="lbl-add-category">
                             + Add Category
                         </button>
                     </div>
 
-                    <!-- Counter Controls (- 12 +) -->
+                    <!-- Counter Controls (- 8 +) -->
                     <div class="flex items-center gap-2 font-mono text-sm font-bold bg-white dark:bg-zinc-950 border-2 border-black dark:border-white px-2 py-0.5">
-                        <button onclick="adjustCategoryCount(-1)" class="hover:text-zinc-500 font-black px-1">-</button>
+                        <button id="btn-cat-minus" onclick="adjustCategoryCount(-1)" class="hover:text-zinc-500 font-black px-1">-</button>
                         <span id="category-count-display">8</span>
-                        <button onclick="adjustCategoryCount(1)" class="hover:text-zinc-500 font-black px-1">+</button>
+                        <button id="btn-cat-plus" onclick="adjustCategoryCount(1)" class="hover:text-zinc-500 font-black px-1">+</button>
                     </div>
                 </div>
 
@@ -202,33 +242,109 @@
                 </div>
             </div>
 
-            <!-- RIGHT COLUMN (Game Action Controls) -->
-            <div class="md:col-span-2 p-6 flex flex-col justify-between items-center text-center bg-zinc-50 dark:bg-zinc-900 min-h-[250px]">
+            <!-- RIGHT COLUMN (QR CODE & Live Room Controls) -->
+            <div class="md:col-span-3 p-4 flex flex-col justify-between items-center text-center bg-zinc-50 dark:bg-zinc-900 min-h-[300px]">
                 
                 <!-- TOP ACTION: STOP BUTTON -->
-                <button id="btn-stop" onclick="triggerStop()" disabled class="w-full py-6 px-2 border-4 border-black dark:border-white bg-red-600 hover:bg-red-700 text-white font-black text-2xl tracking-wider uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] opacity-50 cursor-not-allowed transition-all transform active:translate-x-0.5 active:translate-y-0.5 mb-4">
+                <button id="btn-stop" onclick="triggerStop()" disabled class="w-full py-4 px-2 border-4 border-black dark:border-white bg-red-600 hover:bg-red-700 text-white font-black text-2xl tracking-wider uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] opacity-50 cursor-not-allowed transition-all transform active:translate-x-0.5 active:translate-y-0.5 mb-3">
                     🛑 STOP!
                 </button>
 
-                <!-- SCORE / PROGRESS OVERVIEW -->
-                <div class="w-full my-auto py-3 px-2 border-2 border-black dark:border-white bg-white dark:bg-zinc-950 my-2">
-                    <span class="text-xs uppercase font-bold text-zinc-500 block" id="lbl-score-title">Valid Words</span>
-                    <span id="score-counter" class="text-3xl font-mono font-black text-brand-600 dark:text-brand-500">0 / 8</span>
-                    <div id="score-breakdown" class="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1 font-mono">
-                        Ready to start
+                <!-- REAL-TIME QR CODE & MOBILE JOIN BOX -->
+                <div class="w-full p-3 border-2 border-black dark:border-white bg-white dark:bg-zinc-950 shadow-sm flex flex-col items-center">
+                    <div class="flex items-center justify-between w-full mb-1">
+                        <span class="text-[11px] font-black uppercase tracking-wider text-zinc-500" id="lbl-scan-join">Scan to Join</span>
+                        <span id="room-code-badge" class="font-mono text-xs font-black bg-black text-white dark:bg-white dark:text-black px-1.5 py-0.5">#STOP-1001</span>
+                    </div>
+
+                    <!-- QR Code Widget -->
+                    <div class="p-2 bg-white border border-black my-1 flex justify-center items-center">
+                        <img id="qr-code-img" src="" alt="Scan QR Code to Play" class="w-28 h-28 object-contain">
+                    </div>
+
+                    <!-- Share / Copy Link Button -->
+                    <button onclick="copyJoinLink()" class="w-full mt-1.5 py-1 px-2 border-2 border-black dark:border-white bg-zinc-100 dark:bg-zinc-800 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black font-bold text-xs flex items-center justify-center gap-1.5 transition-colors">
+                        <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                        <span id="lbl-copy-link">Copy Join Link</span>
+                    </button>
+                </div>
+
+                <!-- LIVE CONNECTED PLAYERS LIST -->
+                <div class="w-full border-2 border-black dark:border-white bg-white dark:bg-zinc-950 p-2 my-2 text-left">
+                    <div class="flex justify-between items-center text-xs font-bold mb-1 border-b pb-1 border-black/10 dark:border-white/10">
+                        <span id="lbl-players-title">Active Players</span>
+                        <span id="player-count-badge" class="font-mono bg-emerald-100 text-emerald-800 text-[10px] px-1 font-bold">0 Online</span>
+                    </div>
+                    <div id="connected-players-list" class="max-h-20 overflow-y-auto space-y-1 text-xs font-mono">
+                        <span class="text-zinc-400 italic text-[11px]">Waiting for students to join...</span>
                     </div>
                 </div>
 
-                <!-- RESTART / REFRESH BUTTON (Matching reference image icon layout) -->
-                <div class="w-full pt-4">
-                    <button onclick="restartGame()" class="w-full flex flex-col items-center justify-center p-4 border-2 border-black dark:border-white hover:bg-white dark:hover:bg-zinc-800 transition-all group">
-                        <i data-lucide="rotate-ccw" class="w-8 h-8 group-hover:rotate-[-45deg] transition-transform mb-1"></i>
-                        <span class="font-black uppercase text-sm" id="lbl-restart">Restart</span>
+                <!-- RESTART / REFRESH BUTTON -->
+                <div class="w-full">
+                    <button onclick="restartGame()" class="w-full flex items-center justify-center gap-2 p-2.5 border-2 border-black dark:border-white hover:bg-white dark:hover:bg-zinc-800 transition-all group">
+                        <i data-lucide="rotate-ccw" class="w-4 h-4 group-hover:rotate-[-45deg] transition-transform"></i>
+                        <span class="font-black uppercase text-xs" id="lbl-restart">Restart Round</span>
                     </button>
                 </div>
 
             </div>
         </main>
+
+        <!-- WINNER PODIUM MODAL (Triggers when game STOPs and results are ready) -->
+        <div id="podium-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+            <div class="bg-white dark:bg-zinc-900 border-4 border-black dark:border-white max-w-2xl w-full p-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] dark:shadow-[12px_12px_0px_0px_rgba(255,255,255,1)] flex flex-col items-center relative max-h-[90vh] overflow-y-auto">
+                
+                <button onclick="closePodiumModal()" class="absolute top-4 right-4 font-black text-2xl hover:text-red-500">&times;</button>
+                
+                <div class="text-center mb-4">
+                    <span class="bg-black text-white dark:bg-white dark:text-black font-black text-xs uppercase px-2 py-0.5 tracking-wider" id="lbl-podium-tag">Round Results</span>
+                    <h2 class="text-3xl font-black uppercase tracking-tight mt-1" id="lbl-podium-title">🏆 Winner Podium</h2>
+                    <p class="text-xs text-zinc-500 dark:text-zinc-400 font-mono" id="lbl-podium-subtitle">Score breakdown based on valid letter words &amp; uniqueness!</p>
+                </div>
+
+                <!-- 3D-style Podium Display -->
+                <div class="w-full grid grid-cols-3 gap-2 items-end my-4 max-w-md text-center min-h-[180px]">
+                    
+                    <!-- 2nd Place -->
+                    <div id="podium-2nd" class="flex flex-col items-center">
+                        <span class="text-2xl mb-1">🥈</span>
+                        <span id="name-2nd" class="font-bold text-xs truncate max-w-[80px]">Player 2</span>
+                        <span id="score-2nd" class="font-mono text-xs font-black text-zinc-500">0 pts</span>
+                        <div class="w-full bg-zinc-300 dark:bg-zinc-700 border-2 border-black dark:border-white h-24 flex items-center justify-center font-black text-2xl text-zinc-600 dark:text-zinc-300 mt-1">2</div>
+                    </div>
+
+                    <!-- 1st Place (Tallest) -->
+                    <div id="podium-1st" class="flex flex-col items-center">
+                        <span class="text-4xl mb-1 animate-bounce">🥇</span>
+                        <span id="name-1st" class="font-black text-sm truncate max-w-[100px]">Player 1</span>
+                        <span id="score-1st" class="font-mono text-sm font-black text-brand-600 dark:text-brand-400">0 pts</span>
+                        <div class="w-full bg-amber-400 dark:bg-amber-500 border-2 border-black dark:border-white h-32 flex items-center justify-center font-black text-4xl text-black mt-1">1</div>
+                    </div>
+
+                    <!-- 3rd Place -->
+                    <div id="podium-3rd" class="flex flex-col items-center">
+                        <span class="text-2xl mb-1">🥉</span>
+                        <span id="name-3rd" class="font-bold text-xs truncate max-w-[80px]">Player 3</span>
+                        <span id="score-3rd" class="font-mono text-xs font-black text-zinc-500">0 pts</span>
+                        <div class="w-full bg-amber-700/40 dark:bg-amber-800/60 border-2 border-black dark:border-white h-16 flex items-center justify-center font-black text-xl text-zinc-700 dark:text-zinc-200 mt-1">3</div>
+                    </div>
+
+                </div>
+
+                <!-- Full Score Table breakdown -->
+                <div class="w-full border-2 border-black dark:border-white mt-4 bg-zinc-50 dark:bg-zinc-950 p-3">
+                    <h4 class="font-black text-xs uppercase mb-2" id="lbl-scoreboard-title">Full Leaderboard</h4>
+                    <div id="full-leaderboard-list" class="divide-y divide-black/10 dark:divide-white/10 text-xs font-mono">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <button onclick="closePodiumModal()" class="mt-4 px-6 py-2 bg-black text-white dark:bg-white dark:text-black font-black uppercase text-xs border-2 border-black dark:border-white hover:opacity-80">
+                    Close &amp; Play Next Round
+                </button>
+            </div>
+        </div>
 
         <!-- ALPHABET SELECTION MODAL GRID -->
         <div id="alphabet-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
@@ -251,52 +367,169 @@
                 <a href="#" onclick="showRules(); return false;" class="underline hover:text-black dark:hover:text-white" id="lbl-how-to-play">How to Play</a>
             </div>
             <div class="flex items-center gap-2">
-                <span>Interactive Learning Tool</span>
-                <span class="font-mono bg-black text-white dark:bg-white dark:text-black px-1">v1.2</span>
+                <span>Multiplayer Classroom Portal</span>
+                <span class="font-mono bg-black text-white dark:bg-white dark:text-black px-1">v2.0</span>
             </div>
         </footer>
     </div>
 
-    <!-- JAVASCRIPT GAME LOGIC -->
+    <!-- FIREBASE SDK MODULE IMPORTS -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global Environment variables
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'stop-vocab-app';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : {
+                // Fallback demo config if external config not provided
+                apiKey: "AIzaSyDemoConfigForStopGame12345",
+                authDomain: "stop-game-demo.firebaseapp.com",
+                projectId: "stop-game-demo",
+                storageBucket: "stop-game-demo.appspot.com",
+                messagingSenderId: "1234567890",
+                appId: "1:1234567890:web:1234567890"
+            };
+
+        let app, db, auth;
+        let currentUser = null;
+        let roomDocRef = null;
+
+        // Initialize Firebase safely
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            
+            // Authenticate first before Firestore operations
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
+            currentUser = auth.currentUser;
+            window.db = db;
+            window.auth = auth;
+            window.appId = appId;
+            window.currentUser = currentUser;
+
+            initRoomSync();
+        } catch (err) {
+            console.warn("Firebase initialized in offline/fallback mode:", err);
+            initOfflineFallback();
+        }
+
+        /* ==========================================================================
+           REAL-TIME FIRESTORE ROOM SYNC (Host & Mobile Student)
+           ========================================================================== */
+        const roomId = "ROOM-1001"; // Standard classroom room code
+        window.roomId = roomId;
+
+        function initRoomSync() {
+            if (!db || !currentUser) return;
+
+            // Document path adhering to Rule 1: /artifacts/{appId}/public/data/{collectionName}/{docId}
+            roomDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId);
+
+            // Listen to real-time room changes
+            onSnapshot(roomDocRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const roomData = snapshot.data();
+                    window.syncFromRoomState(roomData);
+                } else {
+                    // Create initial room state if doc doesn't exist
+                    const initialRoomState = {
+                        roomId: roomId,
+                        letter: 'J',
+                        isRunning: false,
+                        timeRemaining: 120,
+                        lang: 'en',
+                        categoryCount: 8,
+                        status: 'waiting', // waiting, playing, stopped
+                        players: {},
+                        updatedAt: Date.now()
+                    };
+                    setDoc(roomDocRef, initialRoomState);
+                }
+            }, (error) => {
+                console.error("Firestore room sync error:", error);
+            });
+        }
+
+        window.updateRemoteRoomState = async function(patch) {
+            if (!db || !roomDocRef) return;
+            try {
+                await updateDoc(roomDocRef, {
+                    ...patch,
+                    updatedAt: Date.now()
+                });
+            } catch (e) {
+                console.warn("Could not push room update:", e);
+            }
+        };
+
+        window.submitStudentAnswers = async function(studentName, answers) {
+            if (!db || !roomDocRef) return;
+            try {
+                const snap = await getDoc(roomDocRef);
+                if (snap.exists()) {
+                    const data = snap.data();
+                    const players = data.players || {};
+                    players[studentName] = {
+                        name: studentName,
+                        answers: answers,
+                        submittedAt: Date.now()
+                    };
+                    await updateDoc(roomDocRef, { players: players });
+                }
+            } catch (e) {
+                console.warn("Error submitting answers:", e);
+            }
+        };
+
+        function initOfflineFallback() {
+            console.log("Operating in local interactive mode.");
+        }
+    </script>
+
     <script>
         /* ==========================================================================
-           DICTIONARIES & DICTIONARY LOOKUP UTILITY FOR ENGLISH & FRENCH
+           VOCABULARY DICTIONARIES & TRANSLATIONS
            ========================================================================== */
         const VOCAB_DICTIONARY = {
             en: {
                 categories: [
                     { id: 'name', name: 'First Name', hint: 'e.g. James, Jessica' },
                     { id: 'animal', name: 'Animal', hint: 'e.g. Jaguar, Jellyfish' },
-                    { id: 'food', name: 'Fruit / Vegetable / Food', hint: 'e.g. Jam, Juice, Jackfruit' },
-                    { id: 'place', name: 'Country / City / Place', hint: 'e.g. Japan, Jamaica, Jakarta' },
+                    { id: 'food', name: 'Fruit / Food', hint: 'e.g. Jam, Juice, Jackfruit' },
+                    { id: 'place', name: 'Country / City', hint: 'e.g. Japan, Jamaica, Jakarta' },
                     { id: 'object', name: 'Object / Item', hint: 'e.g. Jacket, Jar, Jewel' },
                     { id: 'verb', name: 'Verb (Action)', hint: 'e.g. Jump, Jog, Join' },
                     { id: 'color', name: 'Color', hint: 'e.g. Jade, Jet black' },
                     { id: 'job', name: 'Profession / Job', hint: 'e.g. Journalist, Judge' },
                     { id: 'sport', name: 'Sport / Hobby', hint: 'e.g. Judo, Juggling' },
                     { id: 'clothes', name: 'Clothing', hint: 'e.g. Jeans, Jumper' },
-                    { id: 'nature', name: 'Nature / Environment', hint: 'e.g. Jungle, Jasmine' },
+                    { id: 'nature', name: 'Nature', hint: 'e.g. Jungle, Jasmine' },
                     { id: 'adjective', name: 'Adjective', hint: 'e.g. Joyful, Juicy' }
-                ],
-                // Basic validation bank for fast client-side checking
-                commonWords: ["apple", "animal", "actor", "banana", "bear", "boy", "cat", "car", "dog", "duck", "elephant", "eagle", "frog", "fish", "giraffe", "goat", "horse", "hat", "ice", "iguana", "jaguar", "jacket", "jam", "japan", "jump", "judge", "kiwi", "kangaroo", "lion", "lemon", "monkey", "mango", "nurse", "nest", "owl", "orange", "penguin", "pencil", "queen", "quiet", "rabbit", "rose", "snake", "sun", "tiger", "table", "umbrella", "uncle", "violet", "vase", "wolf", "window", "x-ray", "xylophone", "yellow", "yak", "zebra", "zoo"]
+                ]
             },
             fr: {
                 categories: [
                     { id: 'name', name: 'Prénom', hint: 'ex. Jacques, Julie' },
                     { id: 'animal', name: 'Animal', hint: 'ex. Jaguar, Jape' },
-                    { id: 'food', name: 'Fruit / Légume / Nourriture', hint: 'ex. Jambon, Jus' },
-                    { id: 'place', name: 'Pays / Ville / Lieu', hint: 'ex. Japon, Jardin' },
+                    { id: 'food', name: 'Nourriture', hint: 'ex. Jambon, Jus' },
+                    { id: 'place', name: 'Pays / Ville', hint: 'ex. Japon, Jardin' },
                     { id: 'object', name: 'Objet', hint: 'ex. Jeton, Journal' },
                     { id: 'verb', name: 'Verbe', hint: 'ex. Jouer, Jeter, Jongler' },
                     { id: 'color', name: 'Couleur', hint: 'ex. Jaune, Jais' },
-                    { id: 'job', name: 'Métier / Profession', hint: 'ex. Journaliste, Juge' },
-                    { id: 'sport', name: 'Sport / Loisir', hint: 'ex. Judo, Jogging' },
+                    { id: 'job', name: 'Métier', hint: 'ex. Journaliste, Juge' },
+                    { id: 'sport', name: 'Sport', hint: 'ex. Judo, Jogging' },
                     { id: 'clothes', name: 'Vêtement', hint: 'ex. Jupe, Jean' },
                     { id: 'nature', name: 'Nature', hint: 'ex. Jardin, Jonquille' },
-                    { id: 'adjective', name: 'Adjectif', hint: 'ex. Joli, Jeune, Joyeux' }
-                ],
-                commonWords: ["arbre", "agneau", "ananas", "banane", "baleine", "chat", "chien", "dindon", "dauphin", "elephant", "ecole", "fleur", "fromage", "girafe", "gateau", "hibou", "homme", "ile", "iguane", "jardin", "jambon", "jupe", "jouer", "jaune", "journal", "japon", "koala", "kiwi", "lion", "livre", "maison", "mouton", "navet", "nuit", "oiseau", "orange", "pomme", "pain", "quatre", "question", "renard", "rose", "soleil", "singe", "tiger", "table", "usine", "unite", "vache", "voiture", "wagon", "wusu", "yeux", "yaourt", "zebre", "zoo"]
+                    { id: 'adjective', name: 'Adjectif', hint: 'ex. Joli, Jeune' }
+                ]
             }
         };
 
@@ -314,15 +547,20 @@
                 addCategory: "+ Add Category",
                 stop: "🛑 STOP!",
                 validWords: "Valid Words",
-                restart: "Restart",
-                readyToStart: "Press Play to begin",
-                inProgress: "Type fast before time runs out!",
-                stopped: "Time stopped! Checking results...",
+                restart: "Restart Round",
+                scanJoin: "Scan to Join",
+                copyLink: "Copy Join Link",
+                playersTitle: "Active Players",
                 selectLetterTitle: "Select Initial Letter",
                 selectLetterSub: "Choose a specific letter to practice vocabulary starting with that letter:",
                 footerTitle: "English / French Vocabulary Stop! Game",
                 howToPlay: "How to Play",
-                promptCategory: "Enter new category name:"
+                promptCategory: "Enter new category name:",
+                copiedMsg: "Link copied to clipboard!",
+                podiumTitle: "🏆 Winner Podium",
+                podiumSubtitle: "Score breakdown based on valid letter words & uniqueness!",
+                studentWelcome: "Student Player Portal",
+                scoreboardTitle: "Full Leaderboard"
             },
             fr: {
                 themeLbl: "Changer Couleurs",
@@ -338,14 +576,19 @@
                 stop: "🛑 STOP !",
                 validWords: "Mots Valides",
                 restart: "Recommencer",
-                readyToStart: "Appuyez sur Jouer pour commencer",
-                inProgress: "Écrivez vite avant la fin du temps !",
-                stopped: "Temps arrêté ! Vérification des réponses...",
+                scanJoin: "Scannez pour rejoindre",
+                copyLink: "Copier le Lien",
+                playersTitle: "Joueurs Connectés",
                 selectLetterTitle: "Sélectionner la lettre initiale",
                 selectLetterSub: "Choisissez une lettre spécifique pour pratiquer le vocabulaire :",
                 footerTitle: "Jeu du STOP / Petit Bac - Français & Anglais",
                 howToPlay: "Règles du jeu",
-                promptCategory: "Entrez le nom de la nouvelle catégorie :"
+                promptCategory: "Entrez le nom de la nouvelle catégorie :",
+                copiedMsg: "Lien copié dans le presse-papier !",
+                podiumTitle: "🏆 Podium des Gagnants",
+                podiumSubtitle: "Calcul des points basé sur la validité des mots et l'unicité !",
+                studentWelcome: "Portail Élève Mobile",
+                scoreboardTitle: "Classement Général"
             }
         };
 
@@ -360,8 +603,11 @@
         let timerInterval = null;
         let activeCategoryCount = 8;
         let customCategories = [];
+        let currentRole = 'host'; // 'host' or 'student'
+        let studentName = '';
+        let connectedPlayers = {};
 
-        // Audio synthesizer using Web Audio API
+        // Audio synth
         let audioCtx = null;
 
         function getAudioContext() {
@@ -405,29 +651,121 @@
                     gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
                     osc.start(now);
                     osc.stop(now + 0.4);
-                } else if (type === 'valid') {
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(523.25, now); // C5
-                    osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
-                    gain.gain.setValueAtTime(0.1, now);
-                    gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
-                    osc.start(now);
-                    osc.stop(now + 0.25);
+                } else if (type === 'fanfare') {
+                    // Podium celebratory sound
+                    [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                        const subOsc = ctx.createOscillator();
+                        const subGain = ctx.createGain();
+                        subOsc.connect(subGain);
+                        subGain.connect(ctx.destination);
+                        subOsc.frequency.setValueAtTime(freq, now + idx * 0.12);
+                        subGain.gain.setValueAtTime(0.1, now + idx * 0.12);
+                        subGain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.12 + 0.3);
+                        subOsc.start(now + idx * 0.12);
+                        subOsc.stop(now + idx * 0.12 + 0.3);
+                    });
                 }
-            } catch (e) {
-                // Audio safely ignored if forbidden by browser policy
-            }
+            } catch (e) {}
         }
 
         /* ==========================================================================
-           INITIALIZATION & INTERFACE UPDATES
+           DOM LOAD & SETUP
            ========================================================================== */
         window.addEventListener('DOMContentLoaded', () => {
             initAlphabetControls();
             renderCategories();
+            updateQRCode();
             updateUI();
+
+            // Detect join URL parameter if student scanned QR code
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('mode') === 'student' || urlParams.get('join') === 'true') {
+                switchRole('student');
+            }
+
             lucide.createIcons();
         });
+
+        function switchRole(role) {
+            currentRole = role;
+            const btnHost = document.getElementById('btn-role-host');
+            const btnStudent = document.getElementById('btn-role-student');
+            const studentBanner = document.getElementById('student-name-banner');
+            const btnPlay = document.getElementById('btn-play-pause');
+            const btnReroll = document.getElementById('btn-reroll');
+            const btnAddCat = document.getElementById('btn-add-cat');
+            const btnCatMinus = document.getElementById('btn-cat-minus');
+            const btnCatPlus = document.getElementById('btn-cat-plus');
+            const btnChangeTime = document.getElementById('btn-change-time');
+
+            if (role === 'student') {
+                btnStudent.className = "px-2.5 py-1 rounded transition-colors bg-black text-white dark:bg-white dark:text-black font-bold";
+                btnHost.className = "px-2.5 py-1 rounded transition-colors text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white font-bold";
+                studentBanner.classList.remove('hidden');
+
+                // Disable host controls for students
+                btnPlay.style.pointerEvents = "none";
+                btnPlay.style.opacity = "0.5";
+                btnReroll.disabled = true;
+                btnAddCat.disabled = true;
+                btnCatMinus.disabled = true;
+                btnCatPlus.disabled = true;
+                btnChangeTime.disabled = true;
+
+                if (!studentName) {
+                    studentName = "Student_" + Math.floor(1000 + Math.random() * 9000);
+                    document.getElementById('student-name-input').value = studentName;
+                }
+            } else {
+                btnHost.className = "px-2.5 py-1 rounded transition-colors bg-black text-white dark:bg-white dark:text-black font-bold";
+                btnStudent.className = "px-2.5 py-1 rounded transition-colors text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white font-bold";
+                studentBanner.classList.add('hidden');
+
+                btnPlay.style.pointerEvents = "auto";
+                btnPlay.style.opacity = "1";
+                btnReroll.disabled = false;
+                btnAddCat.disabled = false;
+                btnCatMinus.disabled = false;
+                btnCatPlus.disabled = false;
+                btnChangeTime.disabled = false;
+            }
+        }
+
+        function setStudentName() {
+            const inputVal = document.getElementById('student-name-input').value.trim();
+            if (inputVal) {
+                studentName = inputVal.toUpperCase();
+                alert(`Welcome ${studentName}! You are ready to play on your device.`);
+            }
+        }
+
+        function updateQRCode() {
+            // Build join URL with student mode parameter
+            const currentUrl = window.location.href.split('?')[0];
+            const joinUrl = `${currentUrl}?mode=student&room=${window.roomId || 'ROOM-1001'}`;
+            
+            // Use reliable public QR code generation API
+            const qrImg = document.getElementById('qr-code-img');
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(joinUrl)}&margin=4`;
+        }
+
+        function copyJoinLink() {
+            const currentUrl = window.location.href.split('?')[0];
+            const joinUrl = `${currentUrl}?mode=student&room=${window.roomId || 'ROOM-1001'}`;
+
+            // Robust copy to clipboard using execCommand
+            const tempInput = document.createElement("input");
+            tempInput.value = joinUrl;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand("copy");
+            document.body.removeChild(tempInput);
+
+            const btn = document.getElementById('lbl-copy-link');
+            const originalText = btn.textContent;
+            btn.textContent = TRANSLATIONS[currentLang].copiedMsg;
+            setTimeout(() => { btn.textContent = originalText; }, 2000);
+        }
 
         function initAlphabetControls() {
             const selectEl = document.getElementById('alphabet-select');
@@ -460,19 +798,17 @@
         function setLanguage(lang) {
             currentLang = lang;
             
-            // Toggle active pill button styles
             const btnEn = document.getElementById('btn-lang-en');
             const btnFr = document.getElementById('btn-lang-fr');
 
             if (lang === 'en') {
-                btnEn.className = "px-3 py-1 rounded transition-colors bg-black text-white dark:bg-white dark:text-black";
-                btnFr.className = "px-3 py-1 rounded transition-colors text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white";
+                btnEn.className = "px-2.5 py-1 rounded transition-colors bg-black text-white dark:bg-white dark:text-black font-bold";
+                btnFr.className = "px-2.5 py-1 rounded transition-colors text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white font-bold";
             } else {
-                btnFr.className = "px-3 py-1 rounded transition-colors bg-black text-white dark:bg-white dark:text-black";
-                btnEn.className = "px-3 py-1 rounded transition-colors text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white";
+                btnFr.className = "px-2.5 py-1 rounded transition-colors bg-black text-white dark:bg-white dark:text-black font-bold";
+                btnEn.className = "px-2.5 py-1 rounded transition-colors text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white font-bold";
             }
 
-            // Update Text translations
             const t = TRANSLATIONS[lang];
             document.getElementById('lbl-theme').textContent = t.themeLbl;
             document.getElementById('lbl-letter-title').textContent = t.selectedLetter;
@@ -483,12 +819,18 @@
             document.getElementById('lbl-categories-title').textContent = t.categoriesTitle;
             document.getElementById('lbl-add-category').textContent = t.addCategory;
             document.getElementById('btn-stop').textContent = t.stop;
-            document.getElementById('lbl-score-title').textContent = t.validWords;
             document.getElementById('lbl-restart').textContent = t.restart;
+            document.getElementById('lbl-scan-join').textContent = t.scanJoin;
+            document.getElementById('lbl-copy-link').textContent = t.copyLink;
+            document.getElementById('lbl-players-title').textContent = t.playersTitle;
             document.getElementById('lbl-modal-select-letter').textContent = t.selectLetterTitle;
             document.getElementById('lbl-modal-subtitle').textContent = t.selectLetterSub;
             document.getElementById('lbl-footer-title').textContent = t.footerTitle;
             document.getElementById('lbl-how-to-play').textContent = t.howToPlay;
+            document.getElementById('lbl-podium-title').textContent = t.podiumTitle;
+            document.getElementById('lbl-podium-subtitle').textContent = t.podiumSubtitle;
+            document.getElementById('lbl-student-welcome').textContent = t.studentWelcome;
+            document.getElementById('lbl-scoreboard-title').textContent = t.scoreboardTitle;
 
             renderCategories();
             validateAnswers();
@@ -505,11 +847,14 @@
             currentLetter = letter.toUpperCase();
             document.getElementById('active-letter-display').textContent = currentLetter;
             document.getElementById('alphabet-select').value = currentLetter;
+            
+            if (currentRole === 'host' && window.updateRemoteRoomState) {
+                window.updateRemoteRoomState({ letter: currentLetter });
+            }
             validateAnswers();
         }
 
         function rollRandomLetter() {
-            // Pick a letter excluding rarely used starting letters like X, Z, Q, Y occasionally
             const alphabet = "ABCDEFGHIJKLMNOPRSTUVW";
             const randomChar = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
             selectLetter(randomChar);
@@ -527,6 +872,10 @@
                 document.getElementById('category-count-display').textContent = activeCategoryCount;
                 renderCategories();
                 validateAnswers();
+
+                if (currentRole === 'host' && window.updateRemoteRoomState) {
+                    window.updateRemoteRoomState({ categoryCount: activeCategoryCount });
+                }
             }
         }
 
@@ -563,7 +912,8 @@
                     <div class="flex-grow relative">
                         <input type="text" 
                                id="cat-input-${index}" 
-                               data-category="${cat.id}"
+                               data-category-id="${cat.id}"
+                               data-category-name="${cat.name}"
                                oninput="handleInput('${index}')" 
                                placeholder="${currentLetter}..." 
                                disabled
@@ -572,7 +922,6 @@
                                class="w-full bg-zinc-100 dark:bg-zinc-900 border-2 border-black dark:border-white font-mono font-bold px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white text-sm uppercase transition-all disabled:opacity-60 disabled:cursor-not-allowed">
                     </div>
                     <div id="status-icon-${index}" class="w-6 h-6 flex items-center justify-center font-bold text-sm">
-                        <!-- Checked / Validation icon loaded here -->
                     </div>
                 `;
                 container.appendChild(row);
@@ -580,7 +929,7 @@
         }
 
         /* ==========================================================================
-           GAME TIMER & CONTROL LOGIC
+           GAME TIMER & ROOM SYNC LOGIC
            ========================================================================== */
         function toggleTimer() {
             if (isRunning) {
@@ -596,26 +945,26 @@
             isRunning = true;
             playSound('start');
 
-            // Enable text inputs
+            // Enable inputs
             const inputs = document.querySelectorAll('#categories-container input');
             inputs.forEach(input => input.disabled = false);
 
-            // Focus first input if empty
             if (inputs.length > 0 && inputs[0].value === "") {
                 inputs[0].focus();
             }
 
-            // Enable STOP button
             const stopBtn = document.getElementById('btn-stop');
             stopBtn.disabled = false;
             stopBtn.classList.remove('opacity-50', 'cursor-not-allowed');
 
-            // Update Play/Pause UI
             const t = TRANSLATIONS[currentLang];
             document.getElementById('lbl-play-status').textContent = t.pause;
             document.getElementById('play-icon-container').innerHTML = `<i data-lucide="pause" class="w-16 h-16 fill-current"></i>`;
-            document.getElementById('score-breakdown').textContent = t.inProgress;
             lucide.createIcons();
+
+            if (currentRole === 'host' && window.updateRemoteRoomState) {
+                window.updateRemoteRoomState({ isRunning: true, status: 'playing' });
+            }
 
             timerInterval = setInterval(() => {
                 timeRemaining--;
@@ -640,6 +989,10 @@
             document.getElementById('lbl-play-status').textContent = t.play;
             document.getElementById('play-icon-container').innerHTML = `<i data-lucide="play" class="w-16 h-16 fill-current"></i>`;
             lucide.createIcons();
+
+            if (currentRole === 'host' && window.updateRemoteRoomState) {
+                window.updateRemoteRoomState({ isRunning: false, status: 'paused' });
+            }
         }
 
         function triggerStop() {
@@ -650,15 +1003,26 @@
             const inputs = document.querySelectorAll('#categories-container input');
             inputs.forEach(input => input.disabled = true);
 
-            // Disable stop button
             const stopBtn = document.getElementById('btn-stop');
             stopBtn.disabled = true;
             stopBtn.classList.add('opacity-50', 'cursor-not-allowed');
 
-            const t = TRANSLATIONS[currentLang];
-            document.getElementById('score-breakdown').textContent = t.stopped;
+            // Automatically submit local answers
+            const myAnswers = collectCurrentAnswers();
+            const pName = studentName || (currentRole === 'host' ? "Classroom Host" : "Student");
 
-            validateAnswers();
+            if (window.submitStudentAnswers) {
+                window.submitStudentAnswers(pName, myAnswers);
+            }
+
+            if (currentRole === 'host' && window.updateRemoteRoomState) {
+                window.updateRemoteRoomState({ status: 'stopped' });
+            }
+
+            // Calculate scores & display Podium after slight delay for answer sync
+            setTimeout(() => {
+                calculateScoresAndShowPodium();
+            }, 800);
         }
 
         function cycleTimerPreset() {
@@ -669,6 +1033,10 @@
 
             timeRemaining = defaultTimeLimit;
             document.getElementById('timer-display').textContent = timeRemaining;
+
+            if (currentRole === 'host' && window.updateRemoteRoomState) {
+                window.updateRemoteRoomState({ timeRemaining: defaultTimeLimit });
+            }
         }
 
         function restartGame() {
@@ -676,40 +1044,47 @@
             timeRemaining = defaultTimeLimit;
             document.getElementById('timer-display').textContent = timeRemaining;
 
-            // Clear inputs
             const inputs = document.querySelectorAll('#categories-container input');
             inputs.forEach(input => {
                 input.value = '';
                 input.disabled = true;
-                input.classList.remove('bg-green-100', 'dark:bg-green-950', 'border-green-500');
+                input.classList.remove('bg-emerald-100', 'dark:bg-emerald-950', 'border-emerald-500');
             });
 
-            // Disable Stop Button
             const stopBtn = document.getElementById('btn-stop');
             stopBtn.disabled = true;
             stopBtn.classList.add('opacity-50', 'cursor-not-allowed');
 
-            const t = TRANSLATIONS[currentLang];
-            document.getElementById('score-counter').textContent = `0 / ${activeCategoryCount}`;
-            document.getElementById('score-breakdown').textContent = t.readyToStart;
-
-            // Clear validation icons
             for (let i = 0; i < activeCategoryCount; i++) {
                 const iconContainer = document.getElementById(`status-icon-${i}`);
                 if (iconContainer) iconContainer.innerHTML = '';
             }
+
+            if (currentRole === 'host' && window.updateRemoteRoomState) {
+                window.updateRemoteRoomState({
+                    status: 'waiting',
+                    isRunning: false,
+                    timeRemaining: defaultTimeLimit
+                });
+            }
         }
 
         /* ==========================================================================
-           INPUT VALIDATION & PRACTICE CHECKER
+           ANSWERS & PODIUM CALCULATOR
            ========================================================================== */
-        function handleInput(index) {
-            validateAnswers();
+        function collectCurrentAnswers() {
+            const answers = {};
+            const inputs = document.querySelectorAll('#categories-container input');
+            inputs.forEach(input => {
+                const catName = input.getAttribute('data-category-name');
+                const val = input.value.trim().toUpperCase();
+                answers[catName] = val;
+            });
+            return answers;
         }
 
         function validateAnswers() {
             const inputs = document.querySelectorAll('#categories-container input');
-            let validCount = 0;
 
             inputs.forEach((input, idx) => {
                 const val = input.value.trim().toUpperCase();
@@ -722,11 +1097,9 @@
                     return;
                 }
 
-                // Check if input starts with selected active letter
                 const startsCorrectly = val.startsWith(currentLetter);
 
                 if (startsCorrectly) {
-                    validCount++;
                     input.className = "w-full bg-emerald-100 dark:bg-emerald-950/60 border-2 border-emerald-600 dark:border-emerald-500 font-mono font-bold px-3 py-1.5 text-sm uppercase transition-all text-emerald-900 dark:text-emerald-100";
                     iconContainer.innerHTML = `<i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-600 dark:text-emerald-400"></i>`;
                 } else {
@@ -734,25 +1107,169 @@
                     iconContainer.innerHTML = `<i data-lucide="alert-circle" class="w-5 h-5 text-amber-600 dark:text-amber-400"></i>`;
                 }
             });
-
-            document.getElementById('score-counter').textContent = `${validCount} / ${inputs.length}`;
             lucide.createIcons();
         }
 
-        /* ==========================================================================
-           HELP & MODAL HELPERS
-           ========================================================================== */
-        function showRules() {
-            const msg = currentLang === 'en' 
-                ? "HOW TO PLAY 'STOP':\n\n1. Select a letter from A-Z.\n2. Click 'Play' to start the timer.\n3. Type words in English or French starting with the chosen letter for each category.\n4. Click 'STOP!' when you finish or when the timer ends.\n5. Review your score and practice new vocabulary!"
-                : "COMMENT JOUER AU 'STOP / PETIT BAC' :\n\n1. Choisissez une lettre de A à Z.\n2. Cliquez sur 'Jouer' pour lancer le chrono.\n3. Écrivez des mots commençant par la lettre choisie pour chaque catégorie.\n4. Appuyez sur 'STOP !' dès que vous avez fini.\n5. Vérifiez votre score et révisez votre vocabulaire !";
-            
-            alert(msg);
+        function handleInput(index) {
+            validateAnswers();
         }
+
+        function calculateScoresAndShowPodium() {
+            // Collect all players' data
+            const playerScores = [];
+            const localAnswers = collectCurrentAnswers();
+            const hostOrLocalName = studentName || (currentRole === 'host' ? "Classroom Host" : "Student 1");
+
+            // Build active submissions map including local device
+            const allSubmissions = { ...connectedPlayers };
+            allSubmissions[hostOrLocalName] = {
+                name: hostOrLocalName,
+                answers: localAnswers
+            };
+
+            // Count occurrences of each answer per category for uniqueness bonus
+            const categoryAnswerCounts = {};
+
+            Object.values(allSubmissions).forEach(p => {
+                if (!p.answers) return;
+                Object.entries(p.answers).forEach(([cat, word]) => {
+                    if (!word || !word.startsWith(currentLetter)) return;
+                    if (!categoryAnswerCounts[cat]) categoryAnswerCounts[cat] = {};
+                    categoryAnswerCounts[cat][word] = (categoryAnswerCounts[cat][word] || 0) + 1;
+                });
+            });
+
+            // Calculate total points for each player
+            Object.values(allSubmissions).forEach(p => {
+                let score = 0;
+                let validWordsCount = 0;
+                let uniqueWordsCount = 0;
+
+                if (p.answers) {
+                    Object.entries(p.answers).forEach(([cat, word]) => {
+                        if (word && word.startsWith(currentLetter)) {
+                            validWordsCount++;
+                            score += 10; // 10 pts for valid letter match
+
+                            // Check uniqueness bonus
+                            if (categoryAnswerCounts[cat] && categoryAnswerCounts[cat][word] === 1) {
+                                uniqueWordsCount++;
+                                score += 5; // 5 bonus pts for unique word
+                            }
+                        }
+                    });
+                }
+
+                playerScores.push({
+                    name: p.name || 'Anonymous',
+                    score: score,
+                    validWords: validWordsCount,
+                    uniqueWords: uniqueWordsCount
+                });
+            });
+
+            // Sort leaderboard descending by score
+            playerScores.sort((a, b) => b.score - a.score);
+
+            // Populate Winner Podium UI
+            document.getElementById('name-1st').textContent = playerScores[0] ? playerScores[0].name : '-';
+            document.getElementById('score-1st').textContent = playerScores[0] ? `${playerScores[0].score} pts` : '0 pts';
+
+            document.getElementById('name-2nd').textContent = playerScores[1] ? playerScores[1].name : '-';
+            document.getElementById('score-2nd').textContent = playerScores[1] ? `${playerScores[1].score} pts` : '0 pts';
+
+            document.getElementById('name-3rd').textContent = playerScores[2] ? playerScores[2].name : '-';
+            document.getElementById('score-3rd').textContent = playerScores[2] ? `${playerScores[2].score} pts` : '0 pts';
+
+            // Populate Full Leaderboard List
+            const listEl = document.getElementById('full-leaderboard-list');
+            listEl.innerHTML = '';
+
+            playerScores.forEach((p, idx) => {
+                const row = document.createElement('div');
+                row.className = 'py-1.5 flex justify-between items-center';
+                row.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="font-black w-4 text-zinc-400">#${idx + 1}</span>
+                        <span class="font-bold">${p.name}</span>
+                    </div>
+                    <div class="flex gap-3 text-[11px] text-zinc-500">
+                        <span>${p.validWords} words</span>
+                        <span class="text-emerald-600 font-bold">+${p.uniqueWords * 5} unique bonus</span>
+                        <span class="font-black text-black dark:text-white">${p.score} pts</span>
+                    </div>
+                `;
+                listEl.appendChild(row);
+            });
+
+            // Show modal & trigger effects
+            document.getElementById('podium-modal').classList.remove('hidden');
+            playSound('fanfare');
+
+            // Trigger Confetti Animation
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            }
+        }
+
+        function closePodiumModal() {
+            document.getElementById('podium-modal').classList.add('hidden');
+        }
+
+        /* ==========================================================================
+           REAL-TIME SYNC HANDLER (CALLED FROM FIREBASE SNAPSHOT)
+           ========================================================================== */
+        window.syncFromRoomState = function(data) {
+            if (!data) return;
+
+            // Sync letter if changed by host
+            if (data.letter && data.letter !== currentLetter) {
+                currentLetter = data.letter;
+                document.getElementById('active-letter-display').textContent = currentLetter;
+                document.getElementById('alphabet-select').value = currentLetter;
+                validateAnswers();
+            }
+
+            // Sync players online
+            if (data.players) {
+                connectedPlayers = data.players;
+                const playerNames = Object.keys(data.players);
+                document.getElementById('player-count-badge').textContent = `${playerNames.length} Joined`;
+
+                const playersListEl = document.getElementById('connected-players-list');
+                if (playerNames.length > 0) {
+                    playersListEl.innerHTML = playerNames.map(name => `
+                        <div class="flex items-center justify-between text-[11px] bg-zinc-100 dark:bg-zinc-900 px-2 py-0.5 border border-black/10">
+                            <span class="font-bold truncate">${name}</span>
+                            <span class="text-emerald-600 font-mono text-[10px]">● Connected</span>
+                        </div>
+                    `).join('');
+                }
+            }
+
+            // Sync room game status
+            if (data.status === 'playing' && !isRunning && currentRole === 'student') {
+                startTimer();
+            } else if (data.status === 'stopped' && isRunning) {
+                triggerStop();
+            }
+        };
 
         function updateUI() {
             document.getElementById('timer-display').textContent = defaultTimeLimit;
             document.getElementById('category-count-display').textContent = activeCategoryCount;
+        }
+
+        function showRules() {
+            const msg = currentLang === 'en' 
+                ? "HOW TO PLAY 'STOP':\n\n1. Scan the QR code or share the link with students.\n2. Choose a starting letter.\n3. Click 'Play' to start the timer.\n4. Type words starting with the letter for each category.\n5. Click 'STOP!' to lock answers and view the Winner Podium!"
+                : "RÈGLES DU JEU 'STOP / PETIT BAC' :\n\n1. Scannez le QR Code ou partagez le lien aux élèves.\n2. Choisissez une lettre initiale.\n3. Cliquez sur 'Jouer' pour démarrer le chrono.\n4. Remplissez les catégories avec des mots commençant par la lettre.\n5. Cliquez sur 'STOP !' pour afficher le podium des gagnants !";
+            
+            alert(msg);
         }
     </script>
 </body>
