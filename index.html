@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stop! / Scattergories Vocabulary Game - Live Multiplayer</title>
+    <title>Stop! / Scattergories Vocabulary Game - Live Classroom</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -41,7 +41,6 @@
             transition: background-color 0.3s, color 0.3s;
         }
 
-        /* Diagonal stripes background pattern for header box like reference image */
         .stripe-bg {
             background-image: repeating-linear-gradient(
                 45deg,
@@ -62,7 +61,6 @@
             );
         }
 
-        /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
         }
@@ -79,14 +77,6 @@
         .dark ::webkit-scrollbar-thumb {
             background: rgba(255,255,255,0.2);
         }
-
-        @keyframes pulse-fast {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.85; transform: scale(1.02); }
-        }
-        .animate-pulse-fast {
-            animation: pulse-fast 0.8s infinite;
-        }
     </style>
 </head>
 <body class="bg-white text-black dark:bg-zinc-950 dark:text-white min-h-full flex flex-col justify-between transition-colors duration-200">
@@ -100,16 +90,16 @@
                     STOP!
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold tracking-tight">Vocabulary Practice</h1>
-                    <p class="text-xs font-mono text-zinc-500 dark:text-zinc-400">English &amp; Français Scattergories Classroom</p>
+                    <h1 class="text-xl font-bold tracking-tight" id="lbl-header-title">Vocabulary Practice</h1>
+                    <p class="text-xs font-mono text-zinc-500 dark:text-zinc-400" id="lbl-header-subtitle">English &amp; Français Scattergories Classroom</p>
                 </div>
             </div>
 
-            <!-- Global Controls: Language, View Mode, Theme -->
+            <!-- Global Controls -->
             <div class="flex flex-wrap items-center gap-3">
                 
-                <!-- Role / View Switcher (Host vs Mobile Student) -->
-                <div class="flex items-center bg-zinc-100 dark:bg-zinc-900 border-2 border-black dark:border-white rounded p-1 font-semibold text-xs">
+                <!-- Role Switcher (ONLY shown if host/manual access, HIDDEN on student join link) -->
+                <div id="role-switcher-box" class="flex items-center bg-zinc-100 dark:bg-zinc-900 border-2 border-black dark:border-white rounded p-1 font-semibold text-xs">
                     <button id="btn-role-host" onclick="switchRole('host')" class="px-2.5 py-1 rounded transition-colors bg-black text-white dark:bg-white dark:text-black font-bold">
                         📺 Host / Class Screen
                     </button>
@@ -137,30 +127,30 @@
             </div>
         </header>
 
-        <!-- STUDENT JOIN PROMPT (Shown when on Student View if name not set) -->
+        <!-- STUDENT JOIN NAME BANNER (Shown for mobile students) -->
         <div id="student-name-banner" class="hidden mb-4 p-4 border-4 border-black dark:border-white bg-amber-100 dark:bg-amber-950/80 flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center gap-3">
-                <i data-lucide="smartphone" class="w-6 h-6"></i>
+                <i data-lucide="smartphone" class="w-6 h-6 text-black dark:text-white"></i>
                 <div>
                     <span class="font-black text-sm uppercase block" id="lbl-student-welcome">Student Player Portal</span>
-                    <span class="text-xs text-zinc-600 dark:text-zinc-300">You are playing live in room: <strong id="student-room-display" class="font-mono bg-black text-white px-1">#STOP-1001</strong></span>
+                    <span class="text-xs text-zinc-600 dark:text-zinc-300">Room Code: <strong id="student-room-display" class="font-mono bg-black text-white px-1.5 py-0.5">#STOP-1001</strong></span>
                 </div>
             </div>
             <div class="flex items-center gap-2">
-                <input type="text" id="student-name-input" placeholder="Your Name / Nom..." class="bg-white dark:bg-zinc-900 border-2 border-black dark:border-white px-3 py-1 text-sm font-bold focus:outline-none uppercase">
-                <button onclick="setStudentName()" class="bg-black text-white dark:bg-white dark:text-black font-bold text-xs px-3 py-1.5 border-2 border-black dark:border-white hover:opacity-80">
-                    Set Name
+                <input type="text" id="student-name-input" placeholder="Your Name / Nom..." class="bg-white dark:bg-zinc-900 border-2 border-black dark:border-white px-3 py-1.5 text-sm font-bold focus:outline-none uppercase">
+                <button onclick="setStudentName()" class="bg-black text-white dark:bg-white dark:text-black font-bold text-xs px-4 py-2 border-2 border-black dark:border-white hover:opacity-80 transition-opacity">
+                    Join Room
                 </button>
             </div>
         </div>
 
-        <!-- MAIN GAME GRID (Structured like reference image) -->
+        <!-- MAIN GAME GRID -->
         <main class="grid grid-cols-1 md:grid-cols-12 gap-0 border-4 border-black dark:border-white bg-white dark:bg-zinc-950 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)]">
             
             <!-- LEFT COLUMN (Letter & Timer) -->
             <div class="md:col-span-4 border-b-4 md:border-b-0 md:border-r-4 border-black dark:border-white flex flex-col">
                 
-                <!-- BOX 1: LETTER DISPLAY & SELECTOR -->
+                <!-- BOX 1: LETTER DISPLAY -->
                 <div class="relative p-6 stripe-bg border-b-4 border-black dark:border-white flex flex-col justify-between h-64">
                     <div class="flex justify-between items-start">
                         <span class="font-bold uppercase tracking-wider text-sm border-2 border-black dark:border-white px-2 py-0.5 bg-white dark:bg-zinc-900" id="lbl-letter-title">
@@ -181,23 +171,21 @@
                         </span>
                     </div>
 
-                    <!-- Letter Picker Quick Dropdown/Grid trigger -->
+                    <!-- Letter Picker Selector -->
                     <div class="flex items-center justify-between text-xs font-bold pt-2 border-t border-black/10 dark:border-white/10">
-                        <span id="lbl-choose-alphabet">Choose from Alphabet:</span>
+                        <span id="lbl-choose-alphabet">Choose Alphabet:</span>
                         <select id="alphabet-select" onchange="selectLetter(this.value)" class="bg-white dark:bg-zinc-900 border-2 border-black dark:border-white font-mono font-bold px-2 py-1 focus:outline-none cursor-pointer">
                             <!-- Populated dynamically A-Z -->
                         </select>
                     </div>
                 </div>
 
-                <!-- BOX 2: TIMER & PLAY/PAUSE CONTROLS -->
+                <!-- BOX 2: TIMER & CONTROLS -->
                 <div class="grid grid-cols-2 divide-x-4 divide-black dark:divide-white flex-grow min-h-[160px]">
-                    <!-- TIME DISPLAY & SETTINGS -->
                     <div class="p-4 flex flex-col justify-between bg-white dark:bg-zinc-950">
                         <div class="flex justify-between items-center">
                             <span class="font-bold text-xs uppercase tracking-wider" id="lbl-time">Time</span>
-                            <!-- Custom Time Preset Selector -->
-                            <button id="btn-change-time" onclick="cycleTimerPreset()" class="text-xs underline font-bold hover:text-zinc-600 dark:hover:text-zinc-300" id="lbl-change-time">
+                            <button id="btn-change-time" onclick="cycleTimerPreset()" class="text-xs underline font-bold hover:text-zinc-600 dark:hover:text-zinc-300">
                                 Change
                             </button>
                         </div>
@@ -207,7 +195,7 @@
                         </div>
                     </div>
 
-                    <!-- PLAY / PAUSE BUTTON BOX -->
+                    <!-- PLAY / PAUSE BUTTON -->
                     <button id="btn-play-pause" onclick="toggleTimer()" class="p-4 flex flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors group cursor-pointer">
                         <div id="play-icon-container" class="transform group-hover:scale-110 transition-transform">
                             <i data-lucide="play" class="w-16 h-16 fill-current"></i>
@@ -223,12 +211,12 @@
                 <div class="p-3 border-b-4 border-black dark:border-white flex items-center justify-between bg-zinc-100 dark:bg-zinc-900">
                     <div class="flex items-center gap-2">
                         <span class="font-black text-sm uppercase tracking-wider" id="lbl-categories-title">Categories</span>
-                        <button id="btn-add-cat" onclick="addCustomCategoryPrompt()" class="text-xs bg-white dark:bg-zinc-800 border-2 border-black dark:border-white px-2 py-0.5 font-bold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors" id="lbl-add-category">
+                        <button id="btn-add-cat" onclick="addCustomCategoryPrompt()" class="text-xs bg-white dark:bg-zinc-800 border-2 border-black dark:border-white px-2 py-0.5 font-bold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors">
                             + Add Category
                         </button>
                     </div>
 
-                    <!-- Counter Controls (- 8 +) -->
+                    <!-- Category Count Controls -->
                     <div class="flex items-center gap-2 font-mono text-sm font-bold bg-white dark:bg-zinc-950 border-2 border-black dark:border-white px-2 py-0.5">
                         <button id="btn-cat-minus" onclick="adjustCategoryCount(-1)" class="hover:text-zinc-500 font-black px-1">-</button>
                         <span id="category-count-display">8</span>
@@ -236,13 +224,13 @@
                     </div>
                 </div>
 
-                <!-- Categories List / Inputs Container -->
+                <!-- Categories List -->
                 <div id="categories-container" class="divide-y-2 divide-black/10 dark:divide-white/10 overflow-y-auto max-h-[500px] flex-grow">
                     <!-- Dynamic Rows populated by JS -->
                 </div>
             </div>
 
-            <!-- RIGHT COLUMN (QR CODE & Live Room Controls) -->
+            <!-- RIGHT COLUMN (Host Dashboard: QR Code + LIVE CONTESTERS LIST) -->
             <div class="md:col-span-3 p-4 flex flex-col justify-between items-center text-center bg-zinc-50 dark:bg-zinc-900 min-h-[300px]">
                 
                 <!-- TOP ACTION: STOP BUTTON -->
@@ -250,8 +238,8 @@
                     🛑 STOP!
                 </button>
 
-                <!-- REAL-TIME QR CODE & MOBILE JOIN BOX -->
-                <div class="w-full p-3 border-2 border-black dark:border-white bg-white dark:bg-zinc-950 shadow-sm flex flex-col items-center">
+                <!-- REAL-TIME QR CODE & JOIN LINK (ONLY ON HOST SCREEN) -->
+                <div id="qr-section-box" class="w-full p-3 border-2 border-black dark:border-white bg-white dark:bg-zinc-950 shadow-sm flex flex-col items-center">
                     <div class="flex items-center justify-between w-full mb-1">
                         <span class="text-[11px] font-black uppercase tracking-wider text-zinc-500" id="lbl-scan-join">Scan to Join</span>
                         <span id="room-code-badge" class="font-mono text-xs font-black bg-black text-white dark:bg-white dark:text-black px-1.5 py-0.5">#STOP-1001</span>
@@ -262,27 +250,36 @@
                         <img id="qr-code-img" src="" alt="Scan QR Code to Play" class="w-28 h-28 object-contain">
                     </div>
 
-                    <!-- Share / Copy Link Button -->
+                    <!-- Copy Join Link -->
                     <button onclick="copyJoinLink()" class="w-full mt-1.5 py-1 px-2 border-2 border-black dark:border-white bg-zinc-100 dark:bg-zinc-800 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black font-bold text-xs flex items-center justify-center gap-1.5 transition-colors">
                         <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-                        <span id="lbl-copy-link">Copy Join Link</span>
+                        <span id="lbl-copy-link">Copy Student Join Link</span>
                     </button>
                 </div>
 
-                <!-- LIVE CONNECTED PLAYERS LIST -->
-                <div class="w-full border-2 border-black dark:border-white bg-white dark:bg-zinc-950 p-2 my-2 text-left">
-                    <div class="flex justify-between items-center text-xs font-bold mb-1 border-b pb-1 border-black/10 dark:border-white/10">
-                        <span id="lbl-players-title">Active Players</span>
-                        <span id="player-count-badge" class="font-mono bg-emerald-100 text-emerald-800 text-[10px] px-1 font-bold">0 Online</span>
+                <!-- DEDICATED LIVE CONTESTERS / PARTICIPANT LIST -->
+                <div id="contesters-panel" class="w-full border-2 border-black dark:border-white bg-white dark:bg-zinc-950 p-2.5 my-3 text-left flex-grow flex flex-col">
+                    <div class="flex justify-between items-center text-xs font-bold mb-2 pb-1.5 border-b-2 border-black dark:border-white">
+                        <span class="font-black uppercase tracking-wider flex items-center gap-1.5" id="lbl-contesters-title">
+                            <i data-lucide="users" class="w-4 h-4 text-emerald-600"></i>
+                            Live Contesters
+                        </span>
+                        <span id="player-count-badge" class="font-mono bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300 text-[11px] px-1.5 py-0.5 font-black border border-emerald-500">
+                            0 Joined
+                        </span>
                     </div>
-                    <div id="connected-players-list" class="max-h-20 overflow-y-auto space-y-1 text-xs font-mono">
-                        <span class="text-zinc-400 italic text-[11px]">Waiting for students to join...</span>
+
+                    <!-- Scrollable Contesters Container -->
+                    <div id="connected-players-list" class="flex-grow max-h-48 overflow-y-auto space-y-1.5 pr-1">
+                        <div id="no-players-placeholder" class="text-zinc-400 italic text-xs py-4 text-center">
+                            Waiting for students to scan QR code &amp; join...
+                        </div>
                     </div>
                 </div>
 
-                <!-- RESTART / REFRESH BUTTON -->
+                <!-- RESTART ROUND BUTTON -->
                 <div class="w-full">
-                    <button onclick="restartGame()" class="w-full flex items-center justify-center gap-2 p-2.5 border-2 border-black dark:border-white hover:bg-white dark:hover:bg-zinc-800 transition-all group">
+                    <button id="btn-restart-round" onclick="restartGame()" class="w-full flex items-center justify-center gap-2 p-2.5 border-2 border-black dark:border-white hover:bg-white dark:hover:bg-zinc-800 transition-all group">
                         <i data-lucide="rotate-ccw" class="w-4 h-4 group-hover:rotate-[-45deg] transition-transform"></i>
                         <span class="font-black uppercase text-xs" id="lbl-restart">Restart Round</span>
                     </button>
@@ -291,33 +288,32 @@
             </div>
         </main>
 
-        <!-- WINNER PODIUM MODAL (Triggers when game STOPs and results are ready) -->
+        <!-- WINNER PODIUM MODAL -->
         <div id="podium-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
             <div class="bg-white dark:bg-zinc-900 border-4 border-black dark:border-white max-w-2xl w-full p-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] dark:shadow-[12px_12px_0px_0px_rgba(255,255,255,1)] flex flex-col items-center relative max-h-[90vh] overflow-y-auto">
                 
                 <button onclick="closePodiumModal()" class="absolute top-4 right-4 font-black text-2xl hover:text-red-500">&times;</button>
                 
                 <div class="text-center mb-4">
-                    <span class="bg-black text-white dark:bg-white dark:text-black font-black text-xs uppercase px-2 py-0.5 tracking-wider" id="lbl-podium-tag">Round Results</span>
+                    <span class="bg-black text-white dark:bg-white dark:text-black font-black text-xs uppercase px-2 py-0.5 tracking-wider">Round Results</span>
                     <h2 class="text-3xl font-black uppercase tracking-tight mt-1" id="lbl-podium-title">🏆 Winner Podium</h2>
-                    <p class="text-xs text-zinc-500 dark:text-zinc-400 font-mono" id="lbl-podium-subtitle">Score breakdown based on valid letter words &amp; uniqueness!</p>
+                    <p class="text-xs text-zinc-500 dark:text-zinc-400 font-mono" id="lbl-podium-subtitle">Score breakdown based on valid initial letter &amp; unique words!</p>
                 </div>
 
-                <!-- 3D-style Podium Display -->
+                <!-- 3D Podium Display -->
                 <div class="w-full grid grid-cols-3 gap-2 items-end my-4 max-w-md text-center min-h-[180px]">
-                    
                     <!-- 2nd Place -->
                     <div id="podium-2nd" class="flex flex-col items-center">
                         <span class="text-2xl mb-1">🥈</span>
-                        <span id="name-2nd" class="font-bold text-xs truncate max-w-[80px]">Player 2</span>
+                        <span id="name-2nd" class="font-bold text-xs truncate max-w-[80px]">-</span>
                         <span id="score-2nd" class="font-mono text-xs font-black text-zinc-500">0 pts</span>
                         <div class="w-full bg-zinc-300 dark:bg-zinc-700 border-2 border-black dark:border-white h-24 flex items-center justify-center font-black text-2xl text-zinc-600 dark:text-zinc-300 mt-1">2</div>
                     </div>
 
-                    <!-- 1st Place (Tallest) -->
+                    <!-- 1st Place -->
                     <div id="podium-1st" class="flex flex-col items-center">
                         <span class="text-4xl mb-1 animate-bounce">🥇</span>
-                        <span id="name-1st" class="font-black text-sm truncate max-w-[100px]">Player 1</span>
+                        <span id="name-1st" class="font-black text-sm truncate max-w-[100px]">-</span>
                         <span id="score-1st" class="font-mono text-sm font-black text-brand-600 dark:text-brand-400">0 pts</span>
                         <div class="w-full bg-amber-400 dark:bg-amber-500 border-2 border-black dark:border-white h-32 flex items-center justify-center font-black text-4xl text-black mt-1">1</div>
                     </div>
@@ -325,18 +321,16 @@
                     <!-- 3rd Place -->
                     <div id="podium-3rd" class="flex flex-col items-center">
                         <span class="text-2xl mb-1">🥉</span>
-                        <span id="name-3rd" class="font-bold text-xs truncate max-w-[80px]">Player 3</span>
+                        <span id="name-3rd" class="font-bold text-xs truncate max-w-[80px]">-</span>
                         <span id="score-3rd" class="font-mono text-xs font-black text-zinc-500">0 pts</span>
                         <div class="w-full bg-amber-700/40 dark:bg-amber-800/60 border-2 border-black dark:border-white h-16 flex items-center justify-center font-black text-xl text-zinc-700 dark:text-zinc-200 mt-1">3</div>
                     </div>
-
                 </div>
 
-                <!-- Full Score Table breakdown -->
+                <!-- Full Leaderboard -->
                 <div class="w-full border-2 border-black dark:border-white mt-4 bg-zinc-50 dark:bg-zinc-950 p-3">
                     <h4 class="font-black text-xs uppercase mb-2" id="lbl-scoreboard-title">Full Leaderboard</h4>
                     <div id="full-leaderboard-list" class="divide-y divide-black/10 dark:divide-white/10 text-xs font-mono">
-                        <!-- Populated dynamically -->
                     </div>
                 </div>
 
@@ -346,21 +340,20 @@
             </div>
         </div>
 
-        <!-- ALPHABET SELECTION MODAL GRID -->
+        <!-- ALPHABET SELECTION MODAL -->
         <div id="alphabet-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
             <div class="bg-white dark:bg-zinc-900 border-4 border-black dark:border-white max-w-xl w-full p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)]">
                 <div class="flex justify-between items-center mb-4 pb-2 border-b-2 border-black dark:border-white">
                     <h3 class="font-black text-lg uppercase" id="lbl-modal-select-letter">Select Initial Letter</h3>
                     <button onclick="toggleAlphabetModal()" class="font-bold text-xl hover:text-red-500">&times;</button>
                 </div>
-                <p class="text-xs text-zinc-500 mb-4" id="lbl-modal-subtitle">Choose a specific letter to practice vocabulary starting with that letter:</p>
+                <p class="text-xs text-zinc-500 mb-4" id="lbl-modal-subtitle">Choose a letter to practice vocabulary starting with that letter:</p>
                 <div id="alphabet-grid" class="grid grid-cols-6 sm:grid-cols-7 gap-2 font-mono font-bold text-lg">
-                    <!-- Populated via JS -->
                 </div>
             </div>
         </div>
 
-        <!-- FOOTER / CREDIT BAR -->
+        <!-- FOOTER -->
         <footer class="mt-6 border-t-2 border-black dark:border-white pt-4 flex flex-wrap justify-between items-center text-xs text-zinc-600 dark:text-zinc-400 gap-2">
             <div class="flex gap-4 font-bold">
                 <span id="lbl-footer-title">English / French Vocabulary Stop! Game</span>
@@ -368,23 +361,21 @@
             </div>
             <div class="flex items-center gap-2">
                 <span>Multiplayer Classroom Portal</span>
-                <span class="font-mono bg-black text-white dark:bg-white dark:text-black px-1">v2.0</span>
+                <span class="font-mono bg-black text-white dark:bg-white dark:text-black px-1">v3.0</span>
             </div>
         </footer>
     </div>
 
-    <!-- FIREBASE SDK MODULE IMPORTS -->
+    <!-- FIREBASE REALTIME MULTIPLAYER MODULE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, collection, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Global Environment variables
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'stop-vocab-app';
         const firebaseConfig = typeof __firebase_config !== 'undefined' 
             ? JSON.parse(__firebase_config) 
             : {
-                // Fallback demo config if external config not provided
                 apiKey: "AIzaSyDemoConfigForStopGame12345",
                 authDomain: "stop-game-demo.firebaseapp.com",
                 projectId: "stop-game-demo",
@@ -397,13 +388,11 @@
         let currentUser = null;
         let roomDocRef = null;
 
-        // Initialize Firebase safely
         try {
             app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             auth = getAuth(app);
             
-            // Authenticate first before Firestore operations
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                 await signInWithCustomToken(auth, __initial_auth_token);
             } else {
@@ -417,29 +406,22 @@
 
             initRoomSync();
         } catch (err) {
-            console.warn("Firebase initialized in offline/fallback mode:", err);
-            initOfflineFallback();
+            console.warn("Firebase initialized in fallback mode:", err);
         }
 
-        /* ==========================================================================
-           REAL-TIME FIRESTORE ROOM SYNC (Host & Mobile Student)
-           ========================================================================== */
-        const roomId = "ROOM-1001"; // Standard classroom room code
+        const roomId = "ROOM-1001";
         window.roomId = roomId;
 
         function initRoomSync() {
             if (!db || !currentUser) return;
 
-            // Document path adhering to Rule 1: /artifacts/{appId}/public/data/{collectionName}/{docId}
             roomDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId);
 
-            // Listen to real-time room changes
             onSnapshot(roomDocRef, (snapshot) => {
                 if (snapshot.exists()) {
                     const roomData = snapshot.data();
                     window.syncFromRoomState(roomData);
                 } else {
-                    // Create initial room state if doc doesn't exist
                     const initialRoomState = {
                         roomId: roomId,
                         letter: 'J',
@@ -447,7 +429,7 @@
                         timeRemaining: 120,
                         lang: 'en',
                         categoryCount: 8,
-                        status: 'waiting', // waiting, playing, stopped
+                        status: 'waiting',
                         players: {},
                         updatedAt: Date.now()
                     };
@@ -470,8 +452,28 @@
             }
         };
 
+        window.registerContesterInRoom = async function(studentName, status = 'Joined') {
+            if (!db || !roomDocRef || !studentName) return;
+            try {
+                const snap = await getDoc(roomDocRef);
+                if (snap.exists()) {
+                    const data = snap.data();
+                    const players = data.players || {};
+                    players[studentName] = {
+                        ...(players[studentName] || {}),
+                        name: studentName,
+                        status: status,
+                        lastActive: Date.now()
+                    };
+                    await updateDoc(roomDocRef, { players: players });
+                }
+            } catch (e) {
+                console.warn("Error registering contester:", e);
+            }
+        };
+
         window.submitStudentAnswers = async function(studentName, answers) {
-            if (!db || !roomDocRef) return;
+            if (!db || !roomDocRef || !studentName) return;
             try {
                 const snap = await getDoc(roomDocRef);
                 if (snap.exists()) {
@@ -480,6 +482,7 @@
                     players[studentName] = {
                         name: studentName,
                         answers: answers,
+                        status: 'Submitted',
                         submittedAt: Date.now()
                     };
                     await updateDoc(roomDocRef, { players: players });
@@ -488,15 +491,11 @@
                 console.warn("Error submitting answers:", e);
             }
         };
-
-        function initOfflineFallback() {
-            console.log("Operating in local interactive mode.");
-        }
     </script>
 
     <script>
         /* ==========================================================================
-           VOCABULARY DICTIONARIES & TRANSLATIONS
+           DICTIONARY & TRANSLATIONS
            ========================================================================== */
         const VOCAB_DICTIONARY = {
             en: {
@@ -535,10 +534,12 @@
 
         const TRANSLATIONS = {
             en: {
+                headerTitle: "Vocabulary Practice",
+                headerSubtitle: "English & Français Scattergories Classroom",
                 themeLbl: "Change Colors",
                 selectedLetter: "Selected Letter",
                 reroll: "Re-roll",
-                chooseAlphabet: "Choose from Alphabet:",
+                chooseAlphabet: "Choose Alphabet:",
                 time: "Time",
                 change: "Change",
                 play: "Play",
@@ -546,27 +547,28 @@
                 categoriesTitle: "Categories",
                 addCategory: "+ Add Category",
                 stop: "🛑 STOP!",
-                validWords: "Valid Words",
                 restart: "Restart Round",
                 scanJoin: "Scan to Join",
                 copyLink: "Copy Join Link",
-                playersTitle: "Active Players",
+                contestersTitle: "Live Contesters",
                 selectLetterTitle: "Select Initial Letter",
-                selectLetterSub: "Choose a specific letter to practice vocabulary starting with that letter:",
+                selectLetterSub: "Choose a letter to practice vocabulary starting with that letter:",
                 footerTitle: "English / French Vocabulary Stop! Game",
                 howToPlay: "How to Play",
                 promptCategory: "Enter new category name:",
                 copiedMsg: "Link copied to clipboard!",
                 podiumTitle: "🏆 Winner Podium",
-                podiumSubtitle: "Score breakdown based on valid letter words & uniqueness!",
+                podiumSubtitle: "Score breakdown based on valid initial letter & unique words!",
                 studentWelcome: "Student Player Portal",
                 scoreboardTitle: "Full Leaderboard"
             },
             fr: {
+                headerTitle: "Pratique du Vocabulaire",
+                headerSubtitle: "Jeu du Petit Bac / STOP en Classe",
                 themeLbl: "Changer Couleurs",
                 selectedLetter: "Lettre Choisie",
                 reroll: "Tirer au sort",
-                chooseAlphabet: "Choisir dans l'alphabet:",
+                chooseAlphabet: "Choisir l'Alphabet :",
                 time: "Temps",
                 change: "Modifier",
                 play: "Jouer",
@@ -574,26 +576,25 @@
                 categoriesTitle: "Catégories",
                 addCategory: "+ Ajouter Catégorie",
                 stop: "🛑 STOP !",
-                validWords: "Mots Valides",
                 restart: "Recommencer",
                 scanJoin: "Scannez pour rejoindre",
-                copyLink: "Copier le Lien",
-                playersTitle: "Joueurs Connectés",
+                copyLink: "Copier le Lien Élève",
+                contestersTitle: "Candidats en direct",
                 selectLetterTitle: "Sélectionner la lettre initiale",
-                selectLetterSub: "Choisissez une lettre spécifique pour pratiquer le vocabulaire :",
+                selectLetterSub: "Choisissez une lettre pour pratiquer le vocabulaire :",
                 footerTitle: "Jeu du STOP / Petit Bac - Français & Anglais",
                 howToPlay: "Règles du jeu",
                 promptCategory: "Entrez le nom de la nouvelle catégorie :",
-                copiedMsg: "Lien copié dans le presse-papier !",
+                copiedMsg: "Lien copié !",
                 podiumTitle: "🏆 Podium des Gagnants",
-                podiumSubtitle: "Calcul des points basé sur la validité des mots et l'unicité !",
+                podiumSubtitle: "Calcul des points basé sur la lettre initiale et l'unicité !",
                 studentWelcome: "Portail Élève Mobile",
                 scoreboardTitle: "Classement Général"
             }
         };
 
         /* ==========================================================================
-           GAME STATE MANAGEMENT
+           STATE & CONFIGURATION
            ========================================================================== */
         let currentLang = 'en';
         let currentLetter = 'J';
@@ -603,17 +604,13 @@
         let timerInterval = null;
         let activeCategoryCount = 8;
         let customCategories = [];
-        let currentRole = 'host'; // 'host' or 'student'
+        let currentRole = 'host';
         let studentName = '';
         let connectedPlayers = {};
-
-        // Audio synth
         let audioCtx = null;
 
         function getAudioContext() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             return audioCtx;
         }
 
@@ -621,12 +618,10 @@
             try {
                 const ctx = getAudioContext();
                 if (!ctx) return;
-
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
                 osc.connect(gain);
                 gain.connect(ctx.destination);
-
                 const now = ctx.currentTime;
 
                 if (type === 'tick') {
@@ -652,7 +647,6 @@
                     osc.start(now);
                     osc.stop(now + 0.4);
                 } else if (type === 'fanfare') {
-                    // Podium celebratory sound
                     [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
                         const subOsc = ctx.createOscillator();
                         const subGain = ctx.createGain();
@@ -669,18 +663,23 @@
         }
 
         /* ==========================================================================
-           DOM LOAD & SETUP
+           INITIALIZATION & ROLE DETECTION
            ========================================================================== */
         window.addEventListener('DOMContentLoaded', () => {
             initAlphabetControls();
             renderCategories();
-            updateQRCode();
-            updateUI();
 
-            // Detect join URL parameter if student scanned QR code
+            // Detect URL Parameters for Student Role
             const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('mode') === 'student' || urlParams.get('join') === 'true') {
+            const isStudentParam = urlParams.get('join') || urlParams.get('role') === 'student' || urlParams.get('mode') === 'student';
+
+            if (isStudentParam) {
+                // AUTOMATIC STUDENT VIEW: Hide the role switcher box completely
+                document.getElementById('role-switcher-box').style.display = 'none';
                 switchRole('student');
+            } else {
+                switchRole('host');
+                updateQRCode();
             }
 
             lucide.createIcons();
@@ -691,6 +690,8 @@
             const btnHost = document.getElementById('btn-role-host');
             const btnStudent = document.getElementById('btn-role-student');
             const studentBanner = document.getElementById('student-name-banner');
+            const qrSection = document.getElementById('qr-section-box');
+            
             const btnPlay = document.getElementById('btn-play-pause');
             const btnReroll = document.getElementById('btn-reroll');
             const btnAddCat = document.getElementById('btn-add-cat');
@@ -701,9 +702,11 @@
             if (role === 'student') {
                 btnStudent.className = "px-2.5 py-1 rounded transition-colors bg-black text-white dark:bg-white dark:text-black font-bold";
                 btnHost.className = "px-2.5 py-1 rounded transition-colors text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white font-bold";
+                
                 studentBanner.classList.remove('hidden');
+                qrSection.classList.add('hidden'); // Hide QR box on mobile student screen
 
-                // Disable host controls for students
+                // Lock Host Controls for Students
                 btnPlay.style.pointerEvents = "none";
                 btnPlay.style.opacity = "0.5";
                 btnReroll.disabled = true;
@@ -713,13 +716,15 @@
                 btnChangeTime.disabled = true;
 
                 if (!studentName) {
-                    studentName = "Student_" + Math.floor(1000 + Math.random() * 9000);
+                    studentName = "Student_" + Math.floor(100 + Math.random() * 900);
                     document.getElementById('student-name-input').value = studentName;
                 }
             } else {
                 btnHost.className = "px-2.5 py-1 rounded transition-colors bg-black text-white dark:bg-white dark:text-black font-bold";
                 btnStudent.className = "px-2.5 py-1 rounded transition-colors text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white font-bold";
+                
                 studentBanner.classList.add('hidden');
+                qrSection.classList.remove('hidden');
 
                 btnPlay.style.pointerEvents = "auto";
                 btnPlay.style.opacity = "1";
@@ -735,25 +740,26 @@
             const inputVal = document.getElementById('student-name-input').value.trim();
             if (inputVal) {
                 studentName = inputVal.toUpperCase();
-                alert(`Welcome ${studentName}! You are ready to play on your device.`);
+                if (window.registerContesterInRoom) {
+                    window.registerContesterInRoom(studentName, 'Joined');
+                }
+                const btn = document.querySelector('#student-name-banner button');
+                btn.textContent = "✓ Name Set";
+                btn.classList.add('bg-emerald-600', 'text-white');
             }
         }
 
         function updateQRCode() {
-            // Build join URL with student mode parameter
-            const currentUrl = window.location.href.split('?')[0];
-            const joinUrl = `${currentUrl}?mode=student&room=${window.roomId || 'ROOM-1001'}`;
-            
-            // Use reliable public QR code generation API
+            const baseUrl = window.location.href.split('?')[0];
+            const joinUrl = `${baseUrl}?join=${window.roomId || 'ROOM-1001'}`;
             const qrImg = document.getElementById('qr-code-img');
             qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(joinUrl)}&margin=4`;
         }
 
         function copyJoinLink() {
-            const currentUrl = window.location.href.split('?')[0];
-            const joinUrl = `${currentUrl}?mode=student&room=${window.roomId || 'ROOM-1001'}`;
+            const baseUrl = window.location.href.split('?')[0];
+            const joinUrl = `${baseUrl}?join=${window.roomId || 'ROOM-1001'}`;
 
-            // Robust copy to clipboard using execCommand
             const tempInput = document.createElement("input");
             tempInput.value = joinUrl;
             document.body.appendChild(tempInput);
@@ -776,14 +782,12 @@
             for (let i = 65; i <= 90; i++) {
                 const char = String.fromCharCode(i);
                 
-                // Dropdown Option
                 const opt = document.createElement('option');
                 opt.value = char;
                 opt.textContent = char;
                 if (char === currentLetter) opt.selected = true;
                 selectEl.appendChild(opt);
 
-                // Modal Grid Item
                 const btn = document.createElement('button');
                 btn.className = 'p-3 border-2 border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors font-bold text-center';
                 btn.textContent = char;
@@ -797,7 +801,6 @@
 
         function setLanguage(lang) {
             currentLang = lang;
-            
             const btnEn = document.getElementById('btn-lang-en');
             const btnFr = document.getElementById('btn-lang-fr');
 
@@ -810,6 +813,8 @@
             }
 
             const t = TRANSLATIONS[lang];
+            document.getElementById('lbl-header-title').textContent = t.headerTitle;
+            document.getElementById('lbl-header-subtitle').textContent = t.headerSubtitle;
             document.getElementById('lbl-theme').textContent = t.themeLbl;
             document.getElementById('lbl-letter-title').textContent = t.selectedLetter;
             document.getElementById('lbl-random').textContent = t.reroll;
@@ -822,7 +827,7 @@
             document.getElementById('lbl-restart').textContent = t.restart;
             document.getElementById('lbl-scan-join').textContent = t.scanJoin;
             document.getElementById('lbl-copy-link').textContent = t.copyLink;
-            document.getElementById('lbl-players-title').textContent = t.playersTitle;
+            document.getElementById('lbl-contesters-title').innerHTML = `<i data-lucide="users" class="w-4 h-4 text-emerald-600"></i> ${t.contestersTitle}`;
             document.getElementById('lbl-modal-select-letter').textContent = t.selectLetterTitle;
             document.getElementById('lbl-modal-subtitle').textContent = t.selectLetterSub;
             document.getElementById('lbl-footer-title').textContent = t.footerTitle;
@@ -840,9 +845,6 @@
             document.documentElement.classList.toggle('dark');
         }
 
-        /* ==========================================================================
-           LETTER & CATEGORY MANAGEMENT
-           ========================================================================== */
         function selectLetter(letter) {
             currentLetter = letter.toUpperCase();
             document.getElementById('active-letter-display').textContent = currentLetter;
@@ -929,29 +931,21 @@
         }
 
         /* ==========================================================================
-           GAME TIMER & ROOM SYNC LOGIC
+           TIMER & GAME STATE CONTROLS
            ========================================================================== */
         function toggleTimer() {
-            if (isRunning) {
-                pauseTimer();
-            } else {
-                startTimer();
-            }
+            if (isRunning) pauseTimer();
+            else startTimer();
         }
 
         function startTimer() {
             if (isRunning) return;
-
             isRunning = true;
             playSound('start');
 
-            // Enable inputs
             const inputs = document.querySelectorAll('#categories-container input');
             inputs.forEach(input => input.disabled = false);
-
-            if (inputs.length > 0 && inputs[0].value === "") {
-                inputs[0].focus();
-            }
+            if (inputs.length > 0 && inputs[0].value === "") inputs[0].focus();
 
             const stopBtn = document.getElementById('btn-stop');
             stopBtn.disabled = false;
@@ -970,13 +964,8 @@
                 timeRemaining--;
                 document.getElementById('timer-display').textContent = timeRemaining;
 
-                if (timeRemaining <= 10 && timeRemaining > 0) {
-                    playSound('tick');
-                }
-
-                if (timeRemaining <= 0) {
-                    triggerStop();
-                }
+                if (timeRemaining <= 10 && timeRemaining > 0) playSound('tick');
+                if (timeRemaining <= 0) triggerStop();
             }, 1000);
         }
 
@@ -999,7 +988,6 @@
             pauseTimer();
             playSound('stop');
 
-            // Lock all inputs
             const inputs = document.querySelectorAll('#categories-container input');
             inputs.forEach(input => input.disabled = true);
 
@@ -1007,7 +995,7 @@
             stopBtn.disabled = true;
             stopBtn.classList.add('opacity-50', 'cursor-not-allowed');
 
-            // Automatically submit local answers
+            // Submit local answers
             const myAnswers = collectCurrentAnswers();
             const pName = studentName || (currentRole === 'host' ? "Classroom Host" : "Student");
 
@@ -1019,7 +1007,6 @@
                 window.updateRemoteRoomState({ status: 'stopped' });
             }
 
-            // Calculate scores & display Podium after slight delay for answer sync
             setTimeout(() => {
                 calculateScoresAndShowPodium();
             }, 800);
@@ -1070,7 +1057,7 @@
         }
 
         /* ==========================================================================
-           ANSWERS & PODIUM CALCULATOR
+           ANSWERS & SCORE CALCULATOR
            ========================================================================== */
         function collectCurrentAnswers() {
             const answers = {};
@@ -1112,22 +1099,22 @@
 
         function handleInput(index) {
             validateAnswers();
+            if (studentName && window.registerContesterInRoom && isRunning) {
+                window.registerContesterInRoom(studentName, 'Typing...');
+            }
         }
 
         function calculateScoresAndShowPodium() {
-            // Collect all players' data
             const playerScores = [];
             const localAnswers = collectCurrentAnswers();
-            const hostOrLocalName = studentName || (currentRole === 'host' ? "Classroom Host" : "Student 1");
+            const hostOrLocalName = studentName || (currentRole === 'host' ? "Classroom Host" : "Student");
 
-            // Build active submissions map including local device
             const allSubmissions = { ...connectedPlayers };
             allSubmissions[hostOrLocalName] = {
                 name: hostOrLocalName,
                 answers: localAnswers
             };
 
-            // Count occurrences of each answer per category for uniqueness bonus
             const categoryAnswerCounts = {};
 
             Object.values(allSubmissions).forEach(p => {
@@ -1139,7 +1126,6 @@
                 });
             });
 
-            // Calculate total points for each player
             Object.values(allSubmissions).forEach(p => {
                 let score = 0;
                 let validWordsCount = 0;
@@ -1149,12 +1135,10 @@
                     Object.entries(p.answers).forEach(([cat, word]) => {
                         if (word && word.startsWith(currentLetter)) {
                             validWordsCount++;
-                            score += 10; // 10 pts for valid letter match
-
-                            // Check uniqueness bonus
+                            score += 10;
                             if (categoryAnswerCounts[cat] && categoryAnswerCounts[cat][word] === 1) {
                                 uniqueWordsCount++;
-                                score += 5; // 5 bonus pts for unique word
+                                score += 5;
                             }
                         }
                     });
@@ -1168,10 +1152,8 @@
                 });
             });
 
-            // Sort leaderboard descending by score
             playerScores.sort((a, b) => b.score - a.score);
 
-            // Populate Winner Podium UI
             document.getElementById('name-1st').textContent = playerScores[0] ? playerScores[0].name : '-';
             document.getElementById('score-1st').textContent = playerScores[0] ? `${playerScores[0].score} pts` : '0 pts';
 
@@ -1181,7 +1163,6 @@
             document.getElementById('name-3rd').textContent = playerScores[2] ? playerScores[2].name : '-';
             document.getElementById('score-3rd').textContent = playerScores[2] ? `${playerScores[2].score} pts` : '0 pts';
 
-            // Populate Full Leaderboard List
             const listEl = document.getElementById('full-leaderboard-list');
             listEl.innerHTML = '';
 
@@ -1195,18 +1176,16 @@
                     </div>
                     <div class="flex gap-3 text-[11px] text-zinc-500">
                         <span>${p.validWords} words</span>
-                        <span class="text-emerald-600 font-bold">+${p.uniqueWords * 5} unique bonus</span>
+                        <span class="text-emerald-600 font-bold">+${p.uniqueWords * 5} unique</span>
                         <span class="font-black text-black dark:text-white">${p.score} pts</span>
                     </div>
                 `;
                 listEl.appendChild(row);
             });
 
-            // Show modal & trigger effects
             document.getElementById('podium-modal').classList.remove('hidden');
             playSound('fanfare');
 
-            // Trigger Confetti Animation
             if (typeof confetti === 'function') {
                 confetti({
                     particleCount: 100,
@@ -1221,12 +1200,11 @@
         }
 
         /* ==========================================================================
-           REAL-TIME SYNC HANDLER (CALLED FROM FIREBASE SNAPSHOT)
+           REAL-TIME SYNC & LIVE CONTESTER LIST UPDATES
            ========================================================================== */
         window.syncFromRoomState = function(data) {
             if (!data) return;
 
-            // Sync letter if changed by host
             if (data.letter && data.letter !== currentLetter) {
                 currentLetter = data.letter;
                 document.getElementById('active-letter-display').textContent = currentLetter;
@@ -1234,24 +1212,53 @@
                 validateAnswers();
             }
 
-            // Sync players online
+            // Sync Live Contesters
             if (data.players) {
                 connectedPlayers = data.players;
                 const playerNames = Object.keys(data.players);
+                
                 document.getElementById('player-count-badge').textContent = `${playerNames.length} Joined`;
 
                 const playersListEl = document.getElementById('connected-players-list');
+                const placeholder = document.getElementById('no-players-placeholder');
+
                 if (playerNames.length > 0) {
-                    playersListEl.innerHTML = playerNames.map(name => `
-                        <div class="flex items-center justify-between text-[11px] bg-zinc-100 dark:bg-zinc-900 px-2 py-0.5 border border-black/10">
-                            <span class="font-bold truncate">${name}</span>
-                            <span class="text-emerald-600 font-mono text-[10px]">● Connected</span>
+                    if (placeholder) placeholder.style.display = 'none';
+                    
+                    playersListEl.innerHTML = playerNames.map(name => {
+                        const p = data.players[name];
+                        const status = p.status || 'Joined';
+                        
+                        let badgeStyle = 'bg-emerald-100 text-emerald-800 border-emerald-400';
+                        if (status === 'Typing...') badgeStyle = 'bg-amber-100 text-amber-800 border-amber-400 animate-pulse';
+                        if (status === 'Submitted') badgeStyle = 'bg-blue-100 text-blue-800 border-blue-400';
+
+                        // Generate initials for avatar badge
+                        const initials = name.substring(0, 2).toUpperCase();
+
+                        return `
+                            <div class="flex items-center justify-between text-xs bg-zinc-100 dark:bg-zinc-900 p-1.5 border-2 border-black dark:border-white shadow-sm">
+                                <div class="flex items-center gap-2 truncate">
+                                    <div class="w-6 h-6 rounded bg-black text-white dark:bg-white dark:text-black font-black text-[10px] flex items-center justify-center font-mono">
+                                        ${initials}
+                                    </div>
+                                    <span class="font-bold truncate max-w-[100px]">${name}</span>
+                                </div>
+                                <span class="text-[10px] font-bold px-1.5 py-0.5 border ${badgeStyle}">
+                                    ${status}
+                                </span>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    playersListEl.innerHTML = `
+                        <div id="no-players-placeholder" class="text-zinc-400 italic text-xs py-4 text-center">
+                            Waiting for students to scan QR code &amp; join...
                         </div>
-                    `).join('');
+                    `;
                 }
             }
 
-            // Sync room game status
             if (data.status === 'playing' && !isRunning && currentRole === 'student') {
                 startTimer();
             } else if (data.status === 'stopped' && isRunning) {
@@ -1259,16 +1266,10 @@
             }
         };
 
-        function updateUI() {
-            document.getElementById('timer-display').textContent = defaultTimeLimit;
-            document.getElementById('category-count-display').textContent = activeCategoryCount;
-        }
-
         function showRules() {
             const msg = currentLang === 'en' 
-                ? "HOW TO PLAY 'STOP':\n\n1. Scan the QR code or share the link with students.\n2. Choose a starting letter.\n3. Click 'Play' to start the timer.\n4. Type words starting with the letter for each category.\n5. Click 'STOP!' to lock answers and view the Winner Podium!"
-                : "RÈGLES DU JEU 'STOP / PETIT BAC' :\n\n1. Scannez le QR Code ou partagez le lien aux élèves.\n2. Choisissez une lettre initiale.\n3. Cliquez sur 'Jouer' pour démarrer le chrono.\n4. Remplissez les catégories avec des mots commençant par la lettre.\n5. Cliquez sur 'STOP !' pour afficher le podium des gagnants !";
-            
+                ? "HOW TO PLAY 'STOP':\n\n1. Scan the QR code with your mobile device.\n2. Enter your name and wait for the host to press Play.\n3. Type words starting with the letter for each category.\n4. Click 'STOP!' to lock answers and view the Winner Podium!"
+                : "RÈGLES DU JEU 'STOP' :\n\n1. Scannez le QR Code avec votre téléphone.\n2. Entrez votre nom et attendez le départ.\n3. Saisissez des mots commençant par la lettre choisie.\n4. Cliquez sur 'STOP !' pour valider et voir le podium !";
             alert(msg);
         }
     </script>
